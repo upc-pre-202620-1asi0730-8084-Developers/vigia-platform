@@ -1,0 +1,6 @@
+@VigiaPlatform.API_HostAddress = http://localhost:5125
+
+GET {{VigiaPlatform.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
