@@ -1,0 +1,9 @@
+using VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Domain.Model.Aggregates;
+
+namespace VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Domain.Repositories;
+
+public interface IDiscrepancyCaseRepository
+{
+    Task<IEnumerable<DiscrepancyCase>> ListAsync(
+        CancellationToken cancellationToken = default);
+}
