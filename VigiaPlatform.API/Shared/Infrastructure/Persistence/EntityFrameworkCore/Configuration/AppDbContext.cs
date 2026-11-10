@@ -1,9 +1,12 @@
-﻿namespace VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCore.Configuration;
+﻿using Microsoft.EntityFrameworkCore;
 using VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCore.Configuration.Extensions;
 using VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCore.Interceptors;
-using Microsoft.EntityFrameworkCore;
+using VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Infrastructure.Persistence.EntityFrameworkCore.Configuration.Extensions;
 
-public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
+namespace VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCore.Configuration;
+
+public class AppDbContext(DbContextOptions<AppDbContext> options)
+    : DbContext(options)
 {
     protected override void OnConfiguring(DbContextOptionsBuilder builder)
     {
@@ -14,6 +17,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
+
+        builder.ApplyDiscrepancyAndEvidenceManagementConfiguration();
+
         builder.UseSnakeCaseNamingConvention();
     }
 }
