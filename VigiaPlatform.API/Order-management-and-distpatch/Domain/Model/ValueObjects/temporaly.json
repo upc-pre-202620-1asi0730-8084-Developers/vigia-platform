@@ -1,0 +1,218 @@
+﻿[
+  {
+    "id": "DS-104",
+    "projectName": "Tower A (North Floor)",
+    "siteId": "OB-001",
+    "address": "Av. Insurgentes 123, CDMX",
+    "departureDate": "2025-04-14",
+    "estimatedTime": "14:30",
+    "relatedOrderId": "SOL-778",
+    "dispatchType": "DEPARTURE_TO_WORK",
+    "priority": "AVERAGE",
+    "status": "IN_PREPARATION",
+    "createdBy": "Carlos Mendoza",
+    "createdAt": "2025-04-14 10:24",
+    "internalReference": "REF-023",
+    "observations": "Materials ready for delivery on site. Coordinate with the resident on arrival.",
+    "items": [
+      {
+        "id": 1,
+        "code": "MAT-001",
+        "material": "Ready mixed concrete",
+        "quantity": 20,
+        "unit": "t",
+        "observation": "For first level slab"
+      },
+      {
+        "id": 2,
+        "code": "MAT-004",
+        "material": "Reinforcing steel (1/2\")",
+        "quantity": 500,
+        "unit": "kg",
+        "observation": "According to order SOL-778"
+      },
+      {
+        "id": 3,
+        "code": "MAT-006",
+        "material": "PVC pipe (4\")",
+        "quantity": 200,
+        "unit": "m",
+        "observation": ""
+      },
+      {
+        "id": 4,
+        "code": "MAT-011",
+        "material": "Plasticizer additive",
+        "quantity": 10,
+        "unit": "u",
+        "observation": ""
+      }
+    ],
+    "timeline": [
+      {
+        "id": 1,
+        "event": "Dispatch created",
+        "user": "Carlos Mendoza",
+        "description": "Dispatch DS-104 has been created.",
+        "date": "2025-04-14 10:24"
+      }
+    ],
+    "vehicleId": null,
+    "vehiclePlate": null
+  },
+  {
+    "id": "DS-105",
+    "projectName": "South Shopping Center",
+    "siteId": "OB-002",
+    "address": "Calz. de Tlalpan 456, CDMX",
+    "departureDate": "2025-04-14",
+    "estimatedTime": "16:00",
+    "relatedOrderId": "SOL-103",
+    "dispatchType": "DEPARTURE_TO_WORK",
+    "priority": "AVERAGE",
+    "status": "SCHEDULED",
+    "createdBy": "Carlos Mendoza",
+    "createdAt": "2025-04-14 09:00",
+    "internalReference": "REF-024",
+    "observations": "",
+    "items": [
+      {
+        "id": 1,
+        "code": "MAT-004",
+        "material": "Reinforcing steel",
+        "quantity": 5,
+        "unit": "t",
+        "observation": ""
+      }
+    ],
+    "timeline": [
+      {
+        "id": 1,
+        "event": "Dispatch created",
+        "user": "Carlos Mendoza",
+        "description": "Dispatch DS-105 has been created.",
+        "date": "2025-04-14 09:00"
+      }
+    ],
+    "vehicleId": null,
+    "vehiclePlate": null
+  },
+  {
+    "id": "DS-106",
+    "projectName": "Las Lomas Bridge",
+    "siteId": "OB-003",
+    "address": "Carr. Picacho-Ajusco Km 5",
+    "departureDate": "2025-04-15",
+    "estimatedTime": "08:00",
+    "relatedOrderId": "SOL-102",
+    "dispatchType": "DEPARTURE_TO_WORK",
+    "priority": "HIGH",
+    "status": "IN_TRANSIT",
+    "createdBy": "Carlos Mendoza",
+    "createdAt": "2025-04-13 15:00",
+    "internalReference": "REF-025",
+    "observations": "",
+    "items": [
+      {
+        "id": 1,
+        "code": "MAT-006",
+        "material": "PVC pipe",
+        "quantity": 200,
+        "unit": "m",
+        "observation": ""
+      }
+    ],
+    "timeline": [
+      {
+        "id": 1,
+        "event": "Dispatch created",
+        "user": "Carlos Mendoza",
+        "description": "Dispatch DS-106 has been created.",
+        "date": "2025-04-13 15:00"
+      },
+      {
+        "id": 2,
+        "event": "In transit",
+        "user": "Carlos Mendoza",
+        "description": "The dispatch left the warehouse.",
+        "date": "2025-04-15 08:05"
+      }
+    ],
+    "vehicleId": 2,
+    "vehiclePlate": "V3B-920"
+  },
+  {
+    "id": "DS-107",
+    "projectName": "Central Hospital",
+    "siteId": "OB-004",
+    "address": "Av. Cuauhtémoc 330, CDMX",
+    "departureDate": "2025-04-15",
+    "estimatedTime": "11:00",
+    "relatedOrderId": "SOL-100",
+    "dispatchType": "DEPARTURE_TO_WORK",
+    "priority": "AVERAGE",
+    "status": "IN_PREPARATION",
+    "createdBy": "Carlos Mendoza",
+    "createdAt": "2025-04-13 12:00",
+    "internalReference": "REF-026",
+    "observations": "",
+    "items": [
+      {
+        "id": 1,
+        "code": "MAT-009",
+        "material": "Concrete blocks",
+        "quantity": 10000,
+        "unit": "u",
+        "observation": ""
+      }
+    ],
+    "timeline": [
+      {
+        "id": 1,
+        "event": "Dispatch created",
+        "user": "Carlos Mendoza",
+        "description": "Dispatch DS-107 has been created.",
+        "date": "2025-04-13 12:00"
+      }
+    ],
+    "vehicleId": 1,
+    "vehiclePlate": "V3A-780"
+  },
+  {
+    "id": "DS-108",
+    "projectName": "Valley Residential",
+    "siteId": "OB-005",
+    "address": "Prol. Reforma 1200, CDMX",
+    "departureDate": "2025-04-15",
+    "estimatedTime": "09:00",
+    "relatedOrderId": "SOL-101",
+    "dispatchType": "DEPARTURE_TO_WORK",
+    "priority": "LOW",
+    "status": "SCHEDULED",
+    "createdBy": "Carlos Mendoza",
+    "createdAt": "2025-04-12 16:18",
+    "internalReference": "REF-027",
+    "observations": "",
+    "items": [
+      {
+        "id": 1,
+        "code": "MAT-005",
+        "material": "Cement",
+        "quantity": 20,
+        "unit": "t",
+        "observation": ""
+      }
+    ],
+    "timeline": [
+      {
+        "id": 1,
+        "event": "Dispatch created",
+        "user": "Carlos Mendoza",
+        "description": "Dispatch DS-108 has been created.",
+        "date": "2025-04-12 16:18"
+      }
+    ],
+    "vehicleId": null,
+    "vehiclePlate": null
+  }
+]
