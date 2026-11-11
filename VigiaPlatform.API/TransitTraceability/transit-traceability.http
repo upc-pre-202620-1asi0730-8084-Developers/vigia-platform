@@ -1,0 +1,61 @@
+@host = http://localhost:5125
+
+### Start tracking the route of a dispatch
+POST {{host}}/api/v1/routes
+Content-Type: application/json
+
+{
+  "dispatchId": "DS-106",
+  "vehicleId": 2,
+  "vehiclePlate": "V3B-920",
+  "originName": "Almacén Central Lurín",
+  "destinationGeofenceId": 2,
+  "destination": { "name": "Obra Torres de San Isidro", "latitude": -12.0968, "longitude": -77.0347, "radiusMeters": 180 },
+  "plannedPath": [
+    { "latitude": -12.2741, "longitude": -76.8715 },
+    { "latitude": -12.235, "longitude": -76.905 },
+    { "latitude": -12.19, "longitude": -76.948 },
+    { "latitude": -12.155, "longitude": -76.99 },
+    { "latitude": -12.125, "longitude": -77.015 },
+    { "latitude": -12.105, "longitude": -77.028 },
+    { "latitude": -12.0968, "longitude": -77.0347 }
+  ],
+  "startedAt": "2025-04-15T13:00:00Z",
+  "estimatedArrival": "2025-04-15T14:15:00Z"
+}
+
+### List routes (optional ?status=IN_TRANSIT|DEVIATED|STOPPED|SIGNAL_LOST|ARRIVED)
+GET {{host}}/api/v1/routes
+
+### Get one route
+GET {{host}}/api/v1/routes/1
+
+### Position on the planned path
+POST {{host}}/api/v1/routes/1/positions
+Content-Type: application/json
+
+{ "latitude": -12.2569, "longitude": -76.8863, "speedKmh": 30, "reportedAt": "2025-04-15T13:05:00Z" }
+
+### Position far from the planned path: raises ROUTE_DEVIATION
+POST {{host}}/api/v1/routes/1/positions
+Content-Type: application/json
+
+{ "latitude": -12.18, "longitude": -76.948, "speedKmh": 40, "reportedAt": "2025-04-15T13:20:00Z" }
+
+### GPS device stopped reporting
+POST {{host}}/api/v1/routes/1/signal-lost
+Content-Type: application/json
+
+{}
+
+### Alerts of a route
+GET {{host}}/api/v1/routes/1/alerts
+
+### Notify the destination site about a deviation or prolonged-stop alert
+POST {{host}}/api/v1/routes/1/alerts/1/notify
+
+### Position inside the destination geofence: GEOFENCE_ENTRY, route ARRIVED
+POST {{host}}/api/v1/routes/1/positions
+Content-Type: application/json
+
+{ "latitude": -12.0968, "longitude": -77.0347, "speedKmh": 5, "reportedAt": "2025-04-15T14:10:00Z" }
