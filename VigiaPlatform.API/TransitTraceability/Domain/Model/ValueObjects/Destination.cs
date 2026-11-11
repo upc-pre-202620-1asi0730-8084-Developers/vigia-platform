@@ -11,7 +11,7 @@ public sealed class Destination
     public double Latitude { get; private set; }
     public double Longitude { get; private set; }
     public double RadiusMeters { get; private set; }
-
+    private Destination(){Name = string.Empty;}
     public Destination(string name, double latitude, double longitude, double radiusMeters)
     {
         GeoValidation.EnsureCoordinates(latitude, longitude, TransitTraceabilityErrorCodes.InvalidRoute);

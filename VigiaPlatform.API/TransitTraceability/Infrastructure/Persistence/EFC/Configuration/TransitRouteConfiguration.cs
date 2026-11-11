@@ -29,15 +29,14 @@ public class TransitRouteConfiguration : IEntityTypeConfiguration<TransitRoute>
         builder.Property(r => r.DeviationThresholdMeters).IsRequired();
         builder.Property(r => r.StopThresholdMinutes).IsRequired();
 
-        builder.OwnsOne(r => r.Destination, destination =>
+        builder.ComplexProperty(r => r.Destination, destination =>
         {
             destination.Property(d => d.Name).HasColumnName("destination_name").IsRequired().HasMaxLength(150);
             destination.Property(d => d.Latitude).HasColumnName("destination_latitude").IsRequired();
             destination.Property(d => d.Longitude).HasColumnName("destination_longitude").IsRequired();
             destination.Property(d => d.RadiusMeters).HasColumnName("destination_radius_meters").IsRequired();
         });
-        builder.Navigation(r => r.Destination).IsRequired();
-
+        
         builder.HasMany(r => r.Waypoints).WithOne().HasForeignKey(w => w.RouteId).OnDelete(DeleteBehavior.Cascade);
         builder.Navigation(r => r.Waypoints).HasField("_waypoints").UsePropertyAccessMode(PropertyAccessMode.Field);
 
