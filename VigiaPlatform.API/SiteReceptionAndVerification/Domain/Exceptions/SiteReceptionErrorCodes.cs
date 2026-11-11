@@ -5,6 +5,7 @@ namespace VigiaPlatform.API.SiteReceptionAndVerification.Domain.Exceptions;
 /// </summary>
 public static class SiteReceptionErrorCodes
 {
+    public const string ReceptionNotFound = "SITE_RECEPTION_NOT_FOUND";
     public const string InvalidArrival = "SITE_RECEPTION_INVALID_ARRIVAL";
     public const string InvalidWeight = "SITE_RECEPTION_INVALID_WEIGHT";
     public const string InvalidSignature = "SITE_RECEPTION_INVALID_SIGNATURE";

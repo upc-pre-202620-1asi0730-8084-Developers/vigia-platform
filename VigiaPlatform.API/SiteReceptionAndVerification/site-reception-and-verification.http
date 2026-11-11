@@ -1,0 +1,222 @@
+@host = http://localhost:5125
+
+### ==============================================================================
+### SITE RECEPTION AND VERIFICATION (BC-07) - EventStorming Execution Flow
+### Actor: Site Resident (Residente de Obra)
+### ==============================================================================
+
+### ------------------------------------------------------------------------------
+### PATH A: COMPLETE SUCCESS & CONFORMITY LIFECYCLE
+### Flow: Record Arrival -> Confirm Receipt -> Verify Material -> Registrar Conformidad
+### ------------------------------------------------------------------------------
+
+### 1. Record Unit Arrival (Command: Record unit arrival -> Event: Arrival of the registered unit)
+### Creates a new reception record when the transport unit arrives at the site gate.
+POST {{host}}/api/v1/receptions
+Content-Type: application/json
+
+{
+  "dispatchId": "DSP-8001",
+  "carrierPlate": "V3B-920",
+  "driverName": "Carlos Mendoza",
+  "siteId": 1,
+  "siteName": "Obra Torres del Sol - Torre B",
+  "siteResidentName": "Ing. Valeria Rivas",
+  "items": [
+    {
+      "materialId": "MAT-CEM-01",
+      "materialName": "Cemento Portland Tipo I (Bolsa 42.5kg)",
+      "unit": "BOL",
+      "dispatchedQuantity": 500
+    },
+    {
+      "materialId": "MAT-VAR-12",
+      "materialName": "Varilla de Acero Corrugado 1/2 pulgada",
+      "unit": "UND",
+      "dispatchedQuantity": 200
+    }
+  ]
+}
+
+### 2. View Registered Arrivals Board (Cross-check against recorded arrival / Tablero en obra)
+GET {{host}}/api/v1/receptions/upcoming-arrivals
+
+### 3. Confirm Receipt (Command: Confirm Receipt -> Event: Receipt confirmed)
+### Records weighbridge scale weights, custody checklist, and resident digital signature.
+POST {{host}}/api/v1/receptions/1/confirm
+Content-Type: application/json
+
+{
+  "deliveryNoteNumber": "GR-2026-004521",
+  "grossWeightKg": 28450.0,
+  "tareWeightKg": 7200.0,
+  "weighingSlipNumber": "BAL-LIMA-9821",
+  "isSealIntact": true,
+  "isDeliveryNotePhysicalOk": true,
+  "isScaleCalibrated": true,
+  "checklistRemarks": "Precinto de seguridad N° S-99214 intacto y sin signos de manipulación.",
+  "signatureData": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMzAiPjxwYXRoIGQ9Ik0xMCAxNSBRIDUwIDUgOTAgMTUiIHN0cm9rZT0iYmxhY2siIGZpbGw9InRyYW5zcGFyZW50Ii8+PC9zdmc+",
+  "signedBy": "Ing. Valeria Rivas - Residente de Obra CIP 184920",
+  "receiverNotes": "Unidad arriba en tiempo programado. Guía física conforme."
+}
+
+### 4. Verify Received Material (Command: Verify received material -> Event: Verified material)
+### Step 4a: Verify Cement line item (exact quantity matching dispatch)
+POST {{host}}/api/v1/receptions/1/verify-material
+Content-Type: application/json
+
+{
+  "materialId": "MAT-CEM-01",
+  "receivedQuantity": 500.0,
+  "comments": "Conteo físico al 100%: 500 bolsas en buen estado, sin roturas ni humedad."
+}
+
+### Step 4b: Verify Steel Rebar line item (exact quantity matching dispatch)
+POST {{host}}/api/v1/receptions/1/verify-material
+Content-Type: application/json
+
+{
+  "materialId": "MAT-VAR-12",
+  "receivedQuantity": 200.0,
+  "comments": "200 varillas verificadas por atados de obra. Calibre conforme."
+}
+
+### 5. Record Compliance (Command: Registrar conformidad -> Event: Compliance recorded -> Office closed)
+POST {{host}}/api/v1/receptions/1/conformity
+Content-Type: application/json
+
+{
+  "complianceNotes": "Recepción 100% conforme. Peso de balanza, precinto y cantidades físicas coinciden plenamente con la guía de remisión. Despacho liberado y custodia transferida a almacén de obra."
+}
+
+### ------------------------------------------------------------------------------
+### PATH B: DISCREPANCY & EVIDENCE FLOW
+### Flow: Record Arrival -> Confirm (compromised seal) -> Verify Material (shortage) -> Report Discrepancy -> Attach Photographic Evidence
+### ------------------------------------------------------------------------------
+
+### 6. Record Arrival for a second unit
+POST {{host}}/api/v1/receptions
+Content-Type: application/json
+
+{
+  "dispatchId": "DSP-8002",
+  "carrierPlate": "B9F-841",
+  "driverName": "Jorge Alarcón",
+  "siteId": 1,
+  "siteName": "Obra Torres del Sol - Torre B",
+  "siteResidentName": "Ing. Valeria Rivas",
+  "items": [
+    {
+      "materialId": "MAT-CEM-01",
+      "materialName": "Cemento Portland Tipo I (Bolsa 42.5kg)",
+      "unit": "BOL",
+      "dispatchedQuantity": 400
+    }
+  ]
+}
+
+### 7. Confirm Receipt noting seal irregularity and weight difference
+POST {{host}}/api/v1/receptions/2/confirm
+Content-Type: application/json
+
+{
+  "deliveryNoteNumber": "GR-2026-004522",
+  "grossWeightKg": 21800.0,
+  "tareWeightKg": 6900.0,
+  "weighingSlipNumber": "BAL-LIMA-9825",
+  "isSealIntact": false,
+  "isDeliveryNotePhysicalOk": true,
+  "isScaleCalibrated": true,
+  "checklistRemarks": "ALERTA: Precinto de seguridad presenta rasgaduras y no coincide con el número de guía.",
+  "signatureData": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGQ9Ik0wIDAgTDEwMCAxMCIgc3Ryb2tlPSJyZWQiLz48L3N2Zz4=",
+  "signedBy": "Ing. Valeria Rivas - Residente de Obra",
+  "receiverNotes": "Se procede a apertura bajo observación por presunto precinto adulterado."
+}
+
+### 8. Verify Received Material detecting missing physical items (merma / faltante)
+POST {{host}}/api/v1/receptions/2/verify-material
+Content-Type: application/json
+
+{
+  "materialId": "MAT-CEM-01",
+  "receivedQuantity": 365.0,
+  "comments": "Faltante físico de 35 bolsas respecto a las 400 despachadas. Bolsas rotas con merma en plataforma."
+}
+
+### 9. Report Discrepancy (Command: Report discrepancy -> Event: Reported discrepancy)
+POST {{host}}/api/v1/receptions/2/discrepancy
+Content-Type: application/json
+
+{
+  "reason": "MISSING_AND_DAMAGED_MATERIAL",
+  "description": "Faltante de 35 bolsas de cemento Portland y 12 bolsas humedecidas no aptas para vaciado estructural.",
+  "severity": "Critical"
+}
+
+### 10. Attach Photographic Evidence (Command: Attach photographic evidence -> Event: Photographic evidence attached)
+### Step 10a: Broken seal photo
+POST {{host}}/api/v1/receptions/2/evidence
+Content-Type: application/json
+
+{
+  "evidenceType": "BROKEN_SEAL_PHOTO",
+  "fileUrl": "https://storage.vigia.pe/evidences/reception-2/broken-seal-gate.jpg",
+  "description": "Foto en garita del precinto de seguridad fracturado y manipulado."
+}
+
+### Step 10b: Damaged material photo
+POST {{host}}/api/v1/receptions/2/evidence
+Content-Type: application/json
+
+{
+  "evidenceType": "DAMAGED_MATERIAL_PHOTO",
+  "fileUrl": "https://storage.vigia.pe/evidences/reception-2/damaged-cement-bags.jpg",
+  "description": "Bolsas de cemento rotas con pérdida de material sobre la tolva del camión."
+}
+
+### ------------------------------------------------------------------------------
+### RETRIEVAL QUERIES
+### ------------------------------------------------------------------------------
+
+### 11. List all receptions across all sites
+GET {{host}}/api/v1/receptions
+
+### 12. List receptions filtered by site ID
+GET {{host}}/api/v1/receptions?siteId=1
+
+### 13. Get single reception by ID
+GET {{host}}/api/v1/receptions/1
+
+### 14. Get single reception by dispatch ID
+GET {{host}}/api/v1/receptions/by-dispatch/DSP-8001
+
+### ------------------------------------------------------------------------------
+### INVARIANT & BUSINESS RULE VALIDATION SCENARIOS
+### ------------------------------------------------------------------------------
+
+### 15. Attempt to record compliance when security seal is broken (Fails with 400 Bad Request)
+POST {{host}}/api/v1/receptions/2/conformity
+Content-Type: application/json
+
+{
+  "complianceNotes": "Intento inválido de registrar conformidad con precinto roto."
+}
+
+### 16. Attempt to confirm receipt with gross weight less than tare weight (Fails with 400 Bad Request)
+POST {{host}}/api/v1/receptions/1/confirm
+Content-Type: application/json
+
+{
+  "deliveryNoteNumber": "GR-FAIL",
+  "grossWeightKg": 5000.0,
+  "tareWeightKg": 8000.0,
+  "weighingSlipNumber": "BAL-FAIL",
+  "isSealIntact": true,
+  "isDeliveryNotePhysicalOk": true,
+  "isScaleCalibrated": true,
+  "signatureData": "sig",
+  "signedBy": "Ing. Fail"
+}
+
+### 17. Attempt to query a non-existent reception (Fails with 404 Not Found)
+GET {{host}}/api/v1/receptions/9999

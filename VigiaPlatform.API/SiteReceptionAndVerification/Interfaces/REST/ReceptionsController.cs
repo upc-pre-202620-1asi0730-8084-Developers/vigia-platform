@@ -10,6 +10,10 @@ using VigiaPlatform.API.SiteReceptionAndVerification.Domain.Exceptions;
 using VigiaPlatform.API.SiteReceptionAndVerification.Interfaces.REST.Resources;
 using VigiaPlatform.API.SiteReceptionAndVerification.Interfaces.REST.Transform;
 
+/// <summary>
+/// REST API endpoints for the Site Reception and Verification Bounded Context (BC-07).
+/// Implements the on-site verification flow executed by the Site Resident actor.
+/// </summary>
 [ApiController]
 [Route("api/v1/[controller]")]
 [Produces(MediaTypeNames.Application.Json)]
@@ -21,22 +25,25 @@ public class ReceptionsController(
     /// <summary>
     /// Executes EventStorming Command: "Record unit arrival".
     /// </summary>
+    [HttpPost]
     [HttpPost("arrivals")]
     [ProducesResponseType(typeof(ReceptionResource), StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResource), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> RecordUnitArrival([FromBody] RecordUnitArrivalResource resource, CancellationToken cancellationToken)
     {
         try
         {
             var command = ReceptionAssembler.ToCommandFromResource(resource);
             var result = await receptionCommandService.Handle(command, cancellationToken);
-            if (result is null) return BadRequest();
+            if (result is null)
+                return BadRequest(new ErrorResource(SiteReceptionErrorCodes.InvalidArrival, "Failed to record unit arrival."));
+
             var response = ReceptionAssembler.ToResourceFromEntity(result);
             return CreatedAtAction(nameof(GetById), new { id = result.Id }, response);
         }
         catch (SiteReceptionException ex)
         {
-            return BadRequest(new { code = ex.Code, message = ex.Message });
+            return ToErrorResult(ex);
         }
     }
 
@@ -72,11 +79,13 @@ public class ReceptionsController(
     /// </summary>
     [HttpGet("{id:int}")]
     [ProducesResponseType(typeof(ReceptionResource), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResource), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(int id, CancellationToken cancellationToken)
     {
         var result = await receptionQueryService.Handle(new GetReceptionByIdQuery(id), cancellationToken);
-        if (result is null) return NotFound(new { message = $"Reception {id} not found." });
+        if (result is null)
+            return NotFound(new ErrorResource(SiteReceptionErrorCodes.ReceptionNotFound, $"Reception {id} not found."));
+
         return Ok(ReceptionAssembler.ToResourceFromEntity(result));
     }
 
@@ -85,11 +94,13 @@ public class ReceptionsController(
     /// </summary>
     [HttpGet("by-dispatch/{dispatchId}")]
     [ProducesResponseType(typeof(ReceptionResource), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResource), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetByDispatchId(string dispatchId, CancellationToken cancellationToken)
     {
         var result = await receptionQueryService.Handle(new GetReceptionByDispatchIdQuery(dispatchId), cancellationToken);
-        if (result is null) return NotFound(new { message = $"Reception for dispatch '{dispatchId}' not found." });
+        if (result is null)
+            return NotFound(new ErrorResource(SiteReceptionErrorCodes.ReceptionNotFound, $"Reception for dispatch '{dispatchId}' not found."));
+
         return Ok(ReceptionAssembler.ToResourceFromEntity(result));
     }
 
@@ -98,20 +109,22 @@ public class ReceptionsController(
     /// </summary>
     [HttpPost("{id:int}/confirm")]
     [ProducesResponseType(typeof(ReceptionResource), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResource), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResource), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ConfirmReceipt(int id, [FromBody] ConfirmReceiptResource resource, CancellationToken cancellationToken)
     {
         try
         {
             var command = ReceptionAssembler.ToCommandFromResource(id, resource);
             var result = await receptionCommandService.Handle(command, cancellationToken);
-            if (result is null) return NotFound();
+            if (result is null)
+                return NotFound(new ErrorResource(SiteReceptionErrorCodes.ReceptionNotFound, $"Reception {id} not found."));
+
             return Ok(ReceptionAssembler.ToResourceFromEntity(result));
         }
         catch (SiteReceptionException ex)
         {
-            return BadRequest(new { code = ex.Code, message = ex.Message });
+            return ToErrorResult(ex);
         }
     }
 
@@ -120,20 +133,22 @@ public class ReceptionsController(
     /// </summary>
     [HttpPost("{id:int}/verify-material")]
     [ProducesResponseType(typeof(ReceptionResource), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResource), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResource), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> VerifyMaterial(int id, [FromBody] VerifyMaterialResource resource, CancellationToken cancellationToken)
     {
         try
         {
             var command = new VerifyReceivedMaterialCommand(id, resource.MaterialId, resource.ReceivedQuantity, resource.Comments);
             var result = await receptionCommandService.Handle(command, cancellationToken);
-            if (result is null) return NotFound();
+            if (result is null)
+                return NotFound(new ErrorResource(SiteReceptionErrorCodes.ReceptionNotFound, $"Reception {id} not found."));
+
             return Ok(ReceptionAssembler.ToResourceFromEntity(result));
         }
         catch (SiteReceptionException ex)
         {
-            return BadRequest(new { code = ex.Code, message = ex.Message });
+            return ToErrorResult(ex);
         }
     }
 
@@ -142,20 +157,22 @@ public class ReceptionsController(
     /// </summary>
     [HttpPost("{id:int}/conformity")]
     [ProducesResponseType(typeof(ReceptionResource), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResource), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResource), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> RecordConformity(int id, [FromBody] RecordConformityResource resource, CancellationToken cancellationToken)
     {
         try
         {
             var command = new RecordConformityCommand(id, resource.ComplianceNotes);
             var result = await receptionCommandService.Handle(command, cancellationToken);
-            if (result is null) return NotFound();
+            if (result is null)
+                return NotFound(new ErrorResource(SiteReceptionErrorCodes.ReceptionNotFound, $"Reception {id} not found."));
+
             return Ok(ReceptionAssembler.ToResourceFromEntity(result));
         }
         catch (SiteReceptionException ex)
         {
-            return BadRequest(new { code = ex.Code, message = ex.Message });
+            return ToErrorResult(ex);
         }
     }
 
@@ -164,20 +181,23 @@ public class ReceptionsController(
     /// </summary>
     [HttpPost("{id:int}/discrepancy")]
     [ProducesResponseType(typeof(ReceptionResource), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResource), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResource), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResource), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> ReportDiscrepancy(int id, [FromBody] ReportDiscrepancyResource resource, CancellationToken cancellationToken)
     {
         try
         {
             var command = new ReportDiscrepancyCommand(id, resource.Reason, resource.Description, resource.Severity);
             var result = await receptionCommandService.Handle(command, cancellationToken);
-            if (result is null) return NotFound();
+            if (result is null)
+                return NotFound(new ErrorResource(SiteReceptionErrorCodes.ReceptionNotFound, $"Reception {id} not found."));
+
             return Ok(ReceptionAssembler.ToResourceFromEntity(result));
         }
         catch (SiteReceptionException ex)
         {
-            return BadRequest(new { code = ex.Code, message = ex.Message });
+            return ToErrorResult(ex);
         }
     }
 
@@ -186,20 +206,33 @@ public class ReceptionsController(
     /// </summary>
     [HttpPost("{id:int}/evidence")]
     [ProducesResponseType(typeof(ReceptionResource), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResource), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResource), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> AttachEvidence(int id, [FromBody] AttachEvidenceResource resource, CancellationToken cancellationToken)
     {
         try
         {
             var command = new AttachPhotographicEvidenceCommand(id, resource.EvidenceType, resource.FileUrl, resource.Description);
             var result = await receptionCommandService.Handle(command, cancellationToken);
-            if (result is null) return NotFound();
+            if (result is null)
+                return NotFound(new ErrorResource(SiteReceptionErrorCodes.ReceptionNotFound, $"Reception {id} not found."));
+
             return Ok(ReceptionAssembler.ToResourceFromEntity(result));
         }
         catch (SiteReceptionException ex)
         {
-            return BadRequest(new { code = ex.Code, message = ex.Message });
+            return ToErrorResult(ex);
         }
+    }
+
+    private IActionResult ToErrorResult(SiteReceptionException ex)
+    {
+        var body = new ErrorResource(ex.Code, ex.Message);
+        return ex.Code switch
+        {
+            SiteReceptionErrorCodes.ReceptionNotFound or SiteReceptionErrorCodes.ItemNotFound => NotFound(body),
+            SiteReceptionErrorCodes.ReceptionAlreadyClosed or SiteReceptionErrorCodes.DiscrepancyAlreadyReported => Conflict(body),
+            _ => BadRequest(body)
+        };
     }
 }
