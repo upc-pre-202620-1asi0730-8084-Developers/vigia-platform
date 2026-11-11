@@ -16,4 +16,12 @@ public class DiscrepancyCaseRepository(AppDbContext context)
             .OrderByDescending(discrepancy => discrepancy.OpenedAt)
             .ToListAsync(cancellationToken);
     }
+
+    public async Task AddAsync(
+        DiscrepancyCase discrepancyCase,
+        CancellationToken cancellationToken = default)
+    {
+        await context.Set<DiscrepancyCase>()
+            .AddAsync(discrepancyCase, cancellationToken);
+    }
 }
