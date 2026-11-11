@@ -6,4 +6,8 @@ public interface IDiscrepancyCaseRepository
 {
     Task<IEnumerable<DiscrepancyCase>> ListAsync(
         CancellationToken cancellationToken = default);
+
+    Task AddAsync(
+        DiscrepancyCase discrepancyCase,
+        CancellationToken cancellationToken = default);
 }
