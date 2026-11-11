@@ -12,7 +12,7 @@ public class BaseRepository<TEntity>(AppDbContext context) : IBaseRepository<TEn
         await Context.Set<TEntity>().AddAsync(entity, cancellationToken);
     }
 
-    public async Task<TEntity?> FindByIdAsync(int id, CancellationToken cancellationToken = default)
+    public virtual async Task<TEntity?> FindByIdAsync(int id, CancellationToken cancellationToken = default)
     {
         return await Context.Set<TEntity>().FindAsync([id], cancellationToken);
     }
@@ -27,7 +27,7 @@ public class BaseRepository<TEntity>(AppDbContext context) : IBaseRepository<TEn
         Context.Set<TEntity>().Remove(entity);
     }
 
-    public async Task<IEnumerable<TEntity>> ListAsync(CancellationToken cancellationToken = default)
+    public virtual async Task<IEnumerable<TEntity>> ListAsync(CancellationToken cancellationToken = default)
     {
         return await Context.Set<TEntity>().ToListAsync(cancellationToken);
     }
