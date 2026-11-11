@@ -2,8 +2,9 @@
 
 public enum DispatchStatus
 {
-    Pending,
-    InProgress,
+    Scheduled,
+    InPreparation,
+    InTransit,
     Completed,
     Cancelled
 }
