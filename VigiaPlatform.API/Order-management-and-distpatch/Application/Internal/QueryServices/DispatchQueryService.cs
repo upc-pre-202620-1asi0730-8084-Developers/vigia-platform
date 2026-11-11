@@ -1,7 +1,7 @@
 using VigiaPlatform.API.Order_management_and_distpatch.Application.QueryServices;
 using VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.Aggregates;
 using VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.Queries;
-using VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.ValueObjects;
+using VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.ValueObjects.Distpatch.Dispatch;
 using VigiaPlatform.API.Order_management_and_distpatch.Domain.Repositories;
 
 namespace VigiaPlatform.API.Order_management_and_distpatch.Application.Internal.QueryServices;

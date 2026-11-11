@@ -3,7 +3,7 @@ using VigiaPlatform.API.Order_management_and_distpatch.Application.CommandServic
 using VigiaPlatform.API.Order_management_and_distpatch.Domain.Model;
 using VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.Aggregates;
 using VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.Commands;
-using VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.ValueObjects;
+using VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.ValueObjects.Distpatch.Dispatch;
 using VigiaPlatform.API.Order_management_and_distpatch.Domain.Repositories;
 using VigiaPlatform.API.Shared.Application.Patterns;
 using VigiaPlatform.API.Shared.Domain.Repositories;

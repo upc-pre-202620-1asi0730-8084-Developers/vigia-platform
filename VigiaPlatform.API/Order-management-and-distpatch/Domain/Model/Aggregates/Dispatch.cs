@@ -1,6 +1,6 @@
 using VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.Commands;
 using VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.Entities;
-using VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.ValueObjects;
+using VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.ValueObjects.Distpatch.Dispatch;
 
 namespace VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.Aggregates;
 

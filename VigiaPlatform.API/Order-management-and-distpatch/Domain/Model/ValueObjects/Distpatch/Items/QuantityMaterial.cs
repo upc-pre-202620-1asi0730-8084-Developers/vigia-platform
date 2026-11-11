@@ -1,0 +1,16 @@
+﻿namespace VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.ValueObjects.Distpatch.Items;
+
+public record MaterialQuantity
+{
+    public int Value { get; }
+
+    public MaterialQuantity(int value)
+    {
+        if (value <= 0)
+            throw new ArgumentException("Quantity must be greater than zero.", nameof(value));
+
+        Value = value;
+    }
+
+    public override string ToString() => Value.ToString();
+}

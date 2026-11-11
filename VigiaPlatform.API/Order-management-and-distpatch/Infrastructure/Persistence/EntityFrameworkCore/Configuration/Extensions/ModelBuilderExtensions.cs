@@ -2,7 +2,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.Aggregates;
 using VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.Entities;
-using VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.ValueObjects;
+using VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.ValueObjects.Distpatch.Dispatch;
+using VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.ValueObjects.Distpatch.Items;
+using VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.ValueObjects.Distpatch.Timeline;
 
 namespace VigiaPlatform.API.Order_management_and_distpatch.Infrastructure.Persistence.EntityFrameworkCore.Configuration.Extensions;
 

@@ -1,4 +1,4 @@
-using VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.ValueObjects;
+using VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.ValueObjects.Distpatch.Timeline;
 
 namespace VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.Entities;
 
