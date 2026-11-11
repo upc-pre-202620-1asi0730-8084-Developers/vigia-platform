@@ -15,12 +15,14 @@ public static class ModelBuilderExtensions
             entity.HasKey(discrepancy => discrepancy.Id);
 
             entity.Property(discrepancy => discrepancy.Id)
-                .ValueGeneratedNever();
+                .ValueGeneratedOnAdd();
 
             entity.Property(discrepancy => discrepancy.DispatchId)
+                .HasMaxLength(40)
                 .IsRequired();
 
             entity.Property(discrepancy => discrepancy.ReceptionId)
+                .HasMaxLength(40)
                 .IsRequired();
 
             entity.Property(discrepancy => discrepancy.CaseNumber)

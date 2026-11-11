@@ -2,9 +2,9 @@ namespace VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Domain.Model.Aggreg
 
 public class DiscrepancyCase
 {
-    public Guid Id { get; private set; }
-    public Guid DispatchId { get; private set; }
-    public Guid ReceptionId { get; private set; }
+    public int Id { get; private set; }
+    public string DispatchId { get; private set; }
+    public string ReceptionId { get; private set; }
     public string CaseNumber { get; private set; }
     public DateTimeOffset OpenedAt { get; private set; }
     public DateTimeOffset? ClosedAt { get; private set; }
@@ -14,28 +14,25 @@ public class DiscrepancyCase
 
     private DiscrepancyCase()
     {
+        DispatchId = string.Empty;
+        ReceptionId = string.Empty;
         CaseNumber = string.Empty;
         Status = string.Empty;
         DeterminedLiability = string.Empty;
     }
 
     public DiscrepancyCase(
-        Guid dispatchId,
-        Guid receptionId,
+        string dispatchId,
+        string receptionId,
         string caseNumber)
     {
-        if (dispatchId == Guid.Empty)
-            throw new ArgumentException("Dispatch ID is required.");
-
-        if (receptionId == Guid.Empty)
-            throw new ArgumentException("Reception ID is required.");
-
+        ArgumentException.ThrowIfNullOrWhiteSpace(dispatchId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(receptionId);
         ArgumentException.ThrowIfNullOrWhiteSpace(caseNumber);
 
-        Id = Guid.NewGuid();
-        DispatchId = dispatchId;
-        ReceptionId = receptionId;
-        CaseNumber = caseNumber;
+        DispatchId = dispatchId.Trim();
+        ReceptionId = receptionId.Trim();
+        CaseNumber = caseNumber.Trim();
         OpenedAt = DateTimeOffset.UtcNow;
         Status = "Open";
         DeterminedLiability = "Pending";
