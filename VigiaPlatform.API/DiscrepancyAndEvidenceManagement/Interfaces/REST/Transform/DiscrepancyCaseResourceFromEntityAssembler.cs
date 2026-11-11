@@ -1,7 +1,7 @@
 using VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Domain.Model.Aggregates;
-using VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Interfaces.Rest.Resources;
+using VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Interfaces.REST.Resources;
 
-namespace VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Interfaces.Rest.Transform;
+namespace VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Interfaces.REST.Transform;
 
 public static class DiscrepancyCaseResourceFromEntityAssembler
 {

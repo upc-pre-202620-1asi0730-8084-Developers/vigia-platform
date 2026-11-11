@@ -6,6 +6,11 @@ using VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Domain.Repositories;
 using VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Infrastructure.Persistence.EntityFrameworkCore.Repositories;
 using VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCore.Configuration;
 
+using VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Application.CommandServices;
+using VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Application.Internal.CommandServices;
+using VigiaPlatform.API.Shared.Domain.Repositories;
+using VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCore.Repositories;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
@@ -26,6 +31,12 @@ builder.Services.AddScoped<
 builder.Services.AddScoped<
     IDiscrepancyCaseQueryService,
     DiscrepancyCaseQueryService>();
+
+builder.Services.AddScoped<
+    IDiscrepancyCaseCommandService,
+    DiscrepancyCaseCommandService>();
+
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 var app = builder.Build();
 

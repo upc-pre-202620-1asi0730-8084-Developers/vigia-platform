@@ -1,4 +1,4 @@
-namespace VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Interfaces.Rest.Resources;
+namespace VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Interfaces.REST.Resources;
 
 public record DiscrepancyCaseResource(
     Guid Id,
