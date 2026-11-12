@@ -8,4 +8,8 @@ public interface IDiscrepancyCaseCommandService
     Task<DiscrepancyCase> Handle(
         CreateDiscrepancyCaseCommand command,
         CancellationToken cancellationToken = default);
+
+    Task<DiscrepancyCase?> Handle(
+        DetermineDiscrepancyResponsibilityCommand command,
+        CancellationToken cancellationToken = default);
 }

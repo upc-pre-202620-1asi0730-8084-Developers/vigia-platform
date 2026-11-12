@@ -28,6 +28,16 @@ public class DiscrepancyCaseRepository(AppDbContext context)
                 cancellationToken);
     }
 
+    public async Task<DiscrepancyCase?> FindByIdForUpdateAsync(
+        int id,
+        CancellationToken cancellationToken = default)
+    {
+        return await context.Set<DiscrepancyCase>()
+            .FirstOrDefaultAsync(
+                discrepancy => discrepancy.Id == id,
+                cancellationToken);
+    }
+
     public async Task AddAsync(
         DiscrepancyCase discrepancyCase,
         CancellationToken cancellationToken = default)

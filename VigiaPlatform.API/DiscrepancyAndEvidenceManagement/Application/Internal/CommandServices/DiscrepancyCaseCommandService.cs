@@ -21,7 +21,30 @@ public class DiscrepancyCaseCommandService(
             command.CaseNumber
         );
 
-        await repository.AddAsync(discrepancyCase, cancellationToken);
+        await repository.AddAsync(
+            discrepancyCase,
+            cancellationToken);
+
+        await unitOfWork.CompleteAsync(cancellationToken);
+
+        return discrepancyCase;
+    }
+
+    public async Task<DiscrepancyCase?> Handle(
+        DetermineDiscrepancyResponsibilityCommand command,
+        CancellationToken cancellationToken = default)
+    {
+        var discrepancyCase = await repository.FindByIdForUpdateAsync(
+            command.Id,
+            cancellationToken);
+
+        if (discrepancyCase is null)
+        {
+            return null;
+        }
+
+        discrepancyCase.DetermineResponsibility(
+            command.Responsibility);
 
         await unitOfWork.CompleteAsync(cancellationToken);
 
