@@ -13,6 +13,16 @@ public class DiscrepancyCaseQueryService(
         GetAllDiscrepancyCasesQuery query,
         CancellationToken cancellationToken = default)
     {
-        return await discrepancyCaseRepository.ListAsync(cancellationToken);
+        return await discrepancyCaseRepository.ListAsync(
+            cancellationToken);
+    }
+
+    public async Task<DiscrepancyCase?> Handle(
+        GetDiscrepancyCaseByIdQuery query,
+        CancellationToken cancellationToken = default)
+    {
+        return await discrepancyCaseRepository.FindByIdAsync(
+            query.Id,
+            cancellationToken);
     }
 }

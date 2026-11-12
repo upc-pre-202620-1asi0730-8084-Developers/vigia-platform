@@ -8,4 +8,8 @@ public interface IDiscrepancyCaseQueryService
     Task<IEnumerable<DiscrepancyCase>> Handle(
         GetAllDiscrepancyCasesQuery query,
         CancellationToken cancellationToken = default);
+
+    Task<DiscrepancyCase?> Handle(
+        GetDiscrepancyCaseByIdQuery query,
+        CancellationToken cancellationToken = default);
 }
