@@ -1,3 +1,4 @@
+
 using Microsoft.AspNetCore.Mvc;
 using VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Application.CommandServices;
 using VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Application.QueryServices;
@@ -91,5 +92,57 @@ public class DiscrepancyCasesController(
         return StatusCode(
             StatusCodes.Status201Created,
             createdResource);
+    }
+
+    [HttpPatch("{id:int}")]
+    [ProducesResponseType(
+        typeof(DiscrepancyCaseResource),
+        StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> DetermineResponsibility(
+        [FromRoute] int id,
+        [FromBody] DetermineDiscrepancyResponsibilityResource resource,
+        CancellationToken cancellationToken)
+    {
+        if (id <= 0)
+        {
+            return BadRequest("Invalid discrepancy case ID.");
+        }
+
+        if (resource.Responsibility != "Warehouse" &&
+            resource.Responsibility != "Transport" &&
+            resource.Responsibility != "Site")
+        {
+            return BadRequest(
+                "Responsibility must be Warehouse, Transport or Site.");
+        }
+
+        var command =
+            DetermineDiscrepancyResponsibilityCommandFromResourceAssembler
+                .ToCommandFromResource(id, resource);
+
+        try
+        {
+            var discrepancyCase = await commandService.Handle(
+                command,
+                cancellationToken);
+
+            if (discrepancyCase is null)
+            {
+                return NotFound();
+            }
+
+            var updatedResource =
+                DiscrepancyCaseResourceFromEntityAssembler
+                    .ToResourceFromEntity(discrepancyCase);
+
+            return Ok(updatedResource);
+        }
+        catch (InvalidOperationException exception)
+        {
+            return Conflict(exception.Message);
+        }
     }
 }
