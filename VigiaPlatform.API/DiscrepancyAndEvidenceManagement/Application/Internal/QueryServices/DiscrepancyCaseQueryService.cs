@@ -25,4 +25,13 @@ public class DiscrepancyCaseQueryService(
             query.Id,
             cancellationToken);
     }
+
+    public async Task<DiscrepancyCase?> Handle(
+        GetDiscrepancyCaseTimelineQuery query,
+        CancellationToken cancellationToken = default)
+    {
+        return await discrepancyCaseRepository.FindByIdWithEventsAsync(
+            query.Id,
+            cancellationToken);
+    }
 }

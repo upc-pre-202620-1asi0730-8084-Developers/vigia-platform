@@ -12,4 +12,8 @@ public interface IDiscrepancyCaseQueryService
     Task<DiscrepancyCase?> Handle(
         GetDiscrepancyCaseByIdQuery query,
         CancellationToken cancellationToken = default);
+
+    Task<DiscrepancyCase?> Handle(
+        GetDiscrepancyCaseTimelineQuery query,
+        CancellationToken cancellationToken = default);
 }
