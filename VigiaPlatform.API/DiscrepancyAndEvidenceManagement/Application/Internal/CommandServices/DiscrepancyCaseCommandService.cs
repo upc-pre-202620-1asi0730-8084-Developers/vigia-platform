@@ -50,4 +50,24 @@ public class DiscrepancyCaseCommandService(
 
         return discrepancyCase;
     }
+
+    public async Task<DiscrepancyCase?> Handle(
+        CloseDiscrepancyCaseCommand command,
+        CancellationToken cancellationToken = default)
+    {
+        var discrepancyCase = await repository.FindByIdForUpdateAsync(
+            command.Id,
+            cancellationToken);
+
+        if (discrepancyCase is null)
+        {
+            return null;
+        }
+
+        discrepancyCase.Close(command.ResolutionSummary);
+
+        await unitOfWork.CompleteAsync(cancellationToken);
+
+        return discrepancyCase;
+    }
 }
