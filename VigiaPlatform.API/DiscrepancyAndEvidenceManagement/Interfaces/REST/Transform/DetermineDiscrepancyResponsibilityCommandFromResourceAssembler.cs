@@ -11,7 +11,7 @@ public static class DetermineDiscrepancyResponsibilityCommandFromResourceAssembl
     {
         return new DetermineDiscrepancyResponsibilityCommand(
             id,
-            resource.Responsibility
+            resource.Responsibility!
         );
     }
 }

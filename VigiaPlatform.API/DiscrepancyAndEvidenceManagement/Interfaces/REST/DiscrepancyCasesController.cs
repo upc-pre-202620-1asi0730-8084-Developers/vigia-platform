@@ -1,7 +1,7 @@
-
 using Microsoft.AspNetCore.Mvc;
 using VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Application.CommandServices;
 using VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Application.QueryServices;
+using VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Domain.Model.Commands;
 using VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Domain.Model.Queries;
 using VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Interfaces.REST.Resources;
 using VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Interfaces.REST.Transform;
@@ -101,7 +101,7 @@ public class DiscrepancyCasesController(
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> DetermineResponsibility(
+    public async Task<IActionResult> UpdateDiscrepancyCase(
         [FromRoute] int id,
         [FromBody] DetermineDiscrepancyResponsibilityResource resource,
         CancellationToken cancellationToken)
@@ -111,38 +111,81 @@ public class DiscrepancyCasesController(
             return BadRequest("Invalid discrepancy case ID.");
         }
 
-        if (resource.Responsibility != "Warehouse" &&
-            resource.Responsibility != "Transport" &&
-            resource.Responsibility != "Site")
+        bool hasResponsibility = resource.Responsibility is not null;
+        bool hasStatus = resource.Status is not null;
+
+        if (hasResponsibility == hasStatus)
         {
             return BadRequest(
-                "Responsibility must be Warehouse, Transport or Site.");
+                "Provide either responsibility or status.");
         }
-
-        var command =
-            DetermineDiscrepancyResponsibilityCommandFromResourceAssembler
-                .ToCommandFromResource(id, resource);
 
         try
         {
-            var discrepancyCase = await commandService.Handle(
-                command,
+            if (hasResponsibility)
+            {
+                if (resource.ResolutionSummary is not null)
+                {
+                    return BadRequest(
+                        "Resolution summary is only allowed when closing.");
+                }
+
+                if (resource.Responsibility != "Warehouse" &&
+                    resource.Responsibility != "Transport" &&
+                    resource.Responsibility != "Site")
+                {
+                    return BadRequest(
+                        "Responsibility must be Warehouse, Transport or Site.");
+                }
+
+                var command =
+                    DetermineDiscrepancyResponsibilityCommandFromResourceAssembler
+                        .ToCommandFromResource(id, resource);
+
+                var discrepancyCase = await commandService.Handle(
+                    command,
+                    cancellationToken);
+
+                if (discrepancyCase is null)
+                {
+                    return NotFound();
+                }
+
+                return Ok(
+                    DiscrepancyCaseResourceFromEntityAssembler
+                        .ToResourceFromEntity(discrepancyCase));
+            }
+
+            if (resource.Status != "Closed")
+            {
+                return BadRequest(
+                    "Only the Closed status is supported.");
+            }
+
+            var closeCommand = new CloseDiscrepancyCaseCommand(
+                id,
+                resource.ResolutionSummary);
+
+            var closedCase = await commandService.Handle(
+                closeCommand,
                 cancellationToken);
 
-            if (discrepancyCase is null)
+            if (closedCase is null)
             {
                 return NotFound();
             }
 
-            var updatedResource =
+            return Ok(
                 DiscrepancyCaseResourceFromEntityAssembler
-                    .ToResourceFromEntity(discrepancyCase);
-
-            return Ok(updatedResource);
+                    .ToResourceFromEntity(closedCase));
         }
         catch (InvalidOperationException exception)
         {
             return Conflict(exception.Message);
+        }
+        catch (ArgumentException exception)
+        {
+            return BadRequest(exception.Message);
         }
     }
 }
