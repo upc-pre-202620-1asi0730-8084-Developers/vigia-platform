@@ -1,7 +1,11 @@
+using VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Domain.Model.Entities;
+
 namespace VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Domain.Model.Aggregates;
 
 public class DiscrepancyCase
 {
+    private readonly List<DiscrepancyCaseEvent> _events = [];
+
     public int Id { get; private set; }
     public string DispatchId { get; private set; }
     public string ReceptionId { get; private set; }
@@ -11,6 +15,8 @@ public class DiscrepancyCase
     public string Status { get; private set; }
     public string DeterminedLiability { get; private set; }
     public string? ResolutionSummary { get; private set; }
+
+    public IReadOnlyCollection<DiscrepancyCaseEvent> Events => _events;
 
     private DiscrepancyCase()
     {
@@ -33,9 +39,17 @@ public class DiscrepancyCase
         DispatchId = dispatchId.Trim();
         ReceptionId = receptionId.Trim();
         CaseNumber = caseNumber.Trim();
+
         OpenedAt = DateTimeOffset.UtcNow;
         Status = "Open";
         DeterminedLiability = "Pending";
+
+        _events.Add(new DiscrepancyCaseEvent(
+            "Resolution",
+            "Case opened",
+            $"Discrepancy case {CaseNumber} was opened.",
+            OpenedAt
+        ));
     }
 
     public void DetermineResponsibility(string responsibility)
@@ -55,6 +69,13 @@ public class DiscrepancyCase
         }
 
         DeterminedLiability = responsibility;
+
+        _events.Add(new DiscrepancyCaseEvent(
+            "Resolution",
+            "Responsibility determined",
+            $"Responsibility was assigned to {responsibility}.",
+            DateTimeOffset.UtcNow
+        ));
     }
 
     public void Close(string? resolutionSummary)
@@ -83,5 +104,12 @@ public class DiscrepancyCase
 
         Status = "Closed";
         ClosedAt = DateTimeOffset.UtcNow;
+
+        _events.Add(new DiscrepancyCaseEvent(
+            "Resolution",
+            "Case closed",
+            ResolutionSummary ?? "Discrepancy case was closed.",
+            ClosedAt.Value
+        ));
     }
 }
