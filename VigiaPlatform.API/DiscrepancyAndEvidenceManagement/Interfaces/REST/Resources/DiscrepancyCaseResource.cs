@@ -10,4 +10,10 @@ public record DiscrepancyCaseResource(
     string Status,
     string DeterminedLiability,
     string? ResolutionSummary
-);
+)
+{
+    public string? Responsibility =>
+        DeterminedLiability == "Pending"
+            ? null
+            : DeterminedLiability;
+}
