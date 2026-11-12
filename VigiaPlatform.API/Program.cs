@@ -6,6 +6,7 @@ using VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCore.Co
 using VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCore.Repositories;
 using VigiaPlatform.API.SiteReceptionAndVerification;
 using VigiaPlatform.API.SiteReceptionAndVerification.Infrastructure.Persistence.EntityFrameworkCore.Seeding;
+using VigiaPlatform.API.TransitTraceability;
 
 const string FrontendCorsPolicy = "VigiaFrontend";
 
@@ -29,6 +30,7 @@ builder.Services.AddDbContext<AppDbContext>(options => options.UseMySQL(connecti
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 // Bounded contexts
+builder.Services.AddTransitTraceabilityContext();
 builder.Services.AddSiteReceptionAndVerificationContext();
 
 var app = builder.Build();
