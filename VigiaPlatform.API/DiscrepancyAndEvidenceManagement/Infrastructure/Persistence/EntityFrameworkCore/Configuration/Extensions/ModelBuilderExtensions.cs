@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Domain.Model.Aggregates;
+using VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Domain.Model.Entities;
 
 namespace VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Infrastructure.Persistence.EntityFrameworkCore.Configuration.Extensions;
 
@@ -47,6 +48,40 @@ public static class ModelBuilderExtensions
 
             entity.Property(discrepancy => discrepancy.ResolutionSummary)
                 .HasMaxLength(1000);
+
+            entity.HasMany(discrepancy => discrepancy.Events)
+                .WithOne()
+                .HasForeignKey(discrepancyEvent =>
+                    discrepancyEvent.DiscrepancyCaseId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.Navigation(discrepancy => discrepancy.Events)
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        builder.Entity<DiscrepancyCaseEvent>(entity =>
+        {
+            entity.ToTable("discrepancy_case_events");
+
+            entity.HasKey(discrepancyEvent => discrepancyEvent.Id);
+
+            entity.Property(discrepancyEvent => discrepancyEvent.Id)
+                .ValueGeneratedOnAdd();
+
+            entity.Property(discrepancyEvent => discrepancyEvent.Stage)
+                .HasMaxLength(30)
+                .IsRequired();
+
+            entity.Property(discrepancyEvent => discrepancyEvent.Title)
+                .HasMaxLength(100)
+                .IsRequired();
+
+            entity.Property(discrepancyEvent => discrepancyEvent.Description)
+                .HasMaxLength(1200)
+                .IsRequired();
+
+            entity.Property(discrepancyEvent => discrepancyEvent.OccurredAt)
+                .IsRequired();
         });
     }
 }

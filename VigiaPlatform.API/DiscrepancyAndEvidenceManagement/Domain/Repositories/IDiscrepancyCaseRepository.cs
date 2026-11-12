@@ -11,6 +11,10 @@ public interface IDiscrepancyCaseRepository
         int id,
         CancellationToken cancellationToken = default);
 
+    Task<DiscrepancyCase?> FindByIdWithEventsAsync(
+        int id,
+        CancellationToken cancellationToken = default);
+
     Task<DiscrepancyCase?> FindByIdForUpdateAsync(
         int id,
         CancellationToken cancellationToken = default);
