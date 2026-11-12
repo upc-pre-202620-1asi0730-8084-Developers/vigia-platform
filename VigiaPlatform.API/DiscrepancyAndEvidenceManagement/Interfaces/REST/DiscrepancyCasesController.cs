@@ -35,6 +35,32 @@ public class DiscrepancyCasesController(
         return Ok(resources);
     }
 
+    [HttpGet("{id:int}")]
+    [ProducesResponseType(
+        typeof(DiscrepancyCaseResource),
+        StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetDiscrepancyCaseById(
+        [FromRoute] int id,
+        CancellationToken cancellationToken)
+    {
+        var query = new GetDiscrepancyCaseByIdQuery(id);
+
+        var discrepancyCase = await queryService.Handle(
+            query, cancellationToken);
+
+        if (discrepancyCase is null)
+        {
+            return NotFound();
+        }
+
+        var resource =
+            DiscrepancyCaseResourceFromEntityAssembler
+                .ToResourceFromEntity(discrepancyCase);
+
+        return Ok(resource);
+    }
+
     [HttpPost]
     [ProducesResponseType(
         typeof(DiscrepancyCaseResource),
@@ -44,8 +70,8 @@ public class DiscrepancyCasesController(
         [FromBody] CreateDiscrepancyCaseResource resource,
         CancellationToken cancellationToken)
     {
-        if (resource.DispatchId == Guid.Empty ||
-            resource.ReceptionId == Guid.Empty ||
+        if (string.IsNullOrWhiteSpace(resource.DispatchId) ||
+            string.IsNullOrWhiteSpace(resource.ReceptionId) ||
             string.IsNullOrWhiteSpace(resource.CaseNumber))
         {
             return BadRequest("Invalid discrepancy case data.");
