@@ -1,6 +1,6 @@
 ﻿using VigiaPlatform.API.Shared.Domain.Model.ValueObjects;
 
-namespace VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.ValueObjects;
+namespace VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.ValueObjects.Distpatch.Items;
 
 public readonly record struct ItemId(int Value) : IEntityId<int>
 {

@@ -3,4 +3,5 @@
 public interface IEntityId<T> where T : struct
 {
     T Value { get; }
+    
 }
