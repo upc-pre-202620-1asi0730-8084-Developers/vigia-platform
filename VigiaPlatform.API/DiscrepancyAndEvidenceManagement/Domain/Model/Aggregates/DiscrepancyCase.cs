@@ -37,4 +37,23 @@ public class DiscrepancyCase
         Status = "Open";
         DeterminedLiability = "Pending";
     }
+
+    public void DetermineResponsibility(string responsibility)
+    {
+        if (Status == "Closed")
+        {
+            throw new InvalidOperationException(
+                "Cannot change the responsibility of a closed case.");
+        }
+
+        if (responsibility != "Warehouse" &&
+            responsibility != "Transport" &&
+            responsibility != "Site")
+        {
+            throw new ArgumentException(
+                "Invalid responsibility.");
+        }
+
+        DeterminedLiability = responsibility;
+    }
 }
