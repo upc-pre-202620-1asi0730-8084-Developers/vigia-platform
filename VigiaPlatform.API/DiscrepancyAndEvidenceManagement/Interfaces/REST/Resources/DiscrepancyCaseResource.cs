@@ -1,9 +1,9 @@
 namespace VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Interfaces.REST.Resources;
 
 public record DiscrepancyCaseResource(
-    Guid Id,
-    Guid DispatchId,
-    Guid ReceptionId,
+    int Id,
+    string DispatchId,
+    string ReceptionId,
     string CaseNumber,
     DateTimeOffset OpenedAt,
     DateTimeOffset? ClosedAt,
