@@ -56,4 +56,32 @@ public class DiscrepancyCase
 
         DeterminedLiability = responsibility;
     }
+
+    public void Close(string? resolutionSummary)
+    {
+        if (Status == "Closed")
+        {
+            throw new InvalidOperationException(
+                "The discrepancy case is already closed.");
+        }
+
+        if (DeterminedLiability == "Pending")
+        {
+            throw new InvalidOperationException(
+                "Responsibility must be determined before closing the case.");
+        }
+
+        if (resolutionSummary?.Length > 1000)
+        {
+            throw new ArgumentException(
+                "Resolution summary cannot exceed 1000 characters.");
+        }
+
+        ResolutionSummary = string.IsNullOrWhiteSpace(resolutionSummary)
+            ? null
+            : resolutionSummary.Trim();
+
+        Status = "Closed";
+        ClosedAt = DateTimeOffset.UtcNow;
+    }
 }
