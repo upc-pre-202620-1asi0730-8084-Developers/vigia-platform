@@ -5,6 +5,7 @@ using VigiaPlatform.API.Shared.Infrastructure.Interfaces.Asp.Configuration;
 using VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCore.Configuration;
 using VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCore.Repositories;
 using VigiaPlatform.API.SiteReceptionAndVerification;
+using VigiaPlatform.API.SiteReceptionAndVerification.Infrastructure.Persistence.EntityFrameworkCore.Seeding;
 
 const string FrontendCorsPolicy = "VigiaFrontend";
 
@@ -40,7 +41,9 @@ if (app.Environment.IsDevelopment())
 
     // Creates the schema on first run; replace with migrations once the model stabilizes.
     using var scope = app.Services.CreateScope();
-    scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.EnsureCreated();
+    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    dbContext.Database.EnsureCreated();
+    SiteReceptionSeeder.Seed(dbContext);
 }
 
 app.UseHttpsRedirection();
