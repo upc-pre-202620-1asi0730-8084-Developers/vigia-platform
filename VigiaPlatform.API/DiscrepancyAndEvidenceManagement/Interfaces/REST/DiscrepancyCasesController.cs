@@ -62,6 +62,36 @@ public class DiscrepancyCasesController(
         return Ok(resource);
     }
 
+    [HttpGet("{id:int}/timeline")]
+    [ProducesResponseType(
+        typeof(IEnumerable<DiscrepancyCaseTimelineEventResource>),
+        StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetDiscrepancyCaseTimeline(
+        [FromRoute] int id,
+        CancellationToken cancellationToken)
+    {
+        var query = new GetDiscrepancyCaseTimelineQuery(id);
+
+        var discrepancyCase = await queryService.Handle(
+            query, cancellationToken);
+
+        if (discrepancyCase is null)
+        {
+            return NotFound();
+        }
+
+        var resources = discrepancyCase.Events
+            .OrderBy(discrepancyEvent => discrepancyEvent.OccurredAt)
+            .ThenBy(discrepancyEvent => discrepancyEvent.Id)
+            .Select(
+                DiscrepancyCaseTimelineEventResourceFromEntityAssembler
+                    .ToResourceFromEntity)
+            .ToList();
+
+        return Ok(resources);
+    }
+
     [HttpPost]
     [ProducesResponseType(
         typeof(DiscrepancyCaseResource),
