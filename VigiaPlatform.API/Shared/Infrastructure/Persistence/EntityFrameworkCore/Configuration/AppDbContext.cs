@@ -5,6 +5,8 @@ using Microsoft.EntityFrameworkCore;
 using VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCore.Configuration.Extensions;
 using VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCore.Interceptors;
 
+using VigiaPlatform.API.Order_management_and_distpatch.Infrastructure.Persistence.EntityFrameworkCore.Configuration.Extensions;
+
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
     public DbSet<Vehicle> Vehicles => Set<Vehicle>();
@@ -71,6 +73,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             });
             entity.Navigation(g => g.CenterPoint).IsRequired();
         });
+
+        // Order management and dispatch bounded context
+        builder.ApplyOrderManagementAndDispatchConfiguration();
 
         builder.UseSnakeCaseNamingConvention();
     }

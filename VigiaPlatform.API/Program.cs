@@ -1,3 +1,9 @@
+using VigiaPlatform.API.Order_management_and_distpatch.Application.CommandServices;
+using VigiaPlatform.API.Order_management_and_distpatch.Application.Internal.CommandServices;
+using VigiaPlatform.API.Order_management_and_distpatch.Application.Internal.QueryServices;
+using VigiaPlatform.API.Order_management_and_distpatch.Application.QueryServices;
+using VigiaPlatform.API.Order_management_and_distpatch.Domain.Repositories;
+using VigiaPlatform.API.Order_management_and_distpatch.Infrastructure.Persistence.EntityFrameworkCore.Repositories;
 using VigiaPlatform.API.FleetAndDeviceRegistry.Application.Internal.CommandServices;
 using VigiaPlatform.API.FleetAndDeviceRegistry.Application.Internal.QueryServices;
 using VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Repositories;
@@ -69,6 +75,13 @@ builder.Services.AddScoped<IVehicleCommandService, VehicleCommandService>();
 builder.Services.AddScoped<IGeofenceCommandService, GeofenceCommandService>();
 builder.Services.AddScoped<IVehicleQueryService, VehicleQueryService>();
 builder.Services.AddScoped<IGeofenceQueryService, GeofenceQueryService>();
+
+builder.Services.AddScoped<IDispatchRepository, DispatchRepository>();
+builder.Services.AddScoped<IDispatchCommandService, DispatchCommandService>();
+builder.Services.AddScoped<IDispatchQueryService, DispatchQueryService>();
+builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+builder.Services.AddScoped<IOrderCommandService, OrderCommandService>();
+builder.Services.AddScoped<IOrderQueryService, OrderQueryService>();
 
 var app = builder.Build();
 
