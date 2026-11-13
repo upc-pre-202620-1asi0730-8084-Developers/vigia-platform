@@ -1,8 +1,9 @@
 namespace VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCore.Configuration;
 using VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Model.Aggregates;
+
+using Microsoft.EntityFrameworkCore;
 using VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCore.Configuration.Extensions;
 using VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCore.Interceptors;
-using Microsoft.EntityFrameworkCore;
 
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {

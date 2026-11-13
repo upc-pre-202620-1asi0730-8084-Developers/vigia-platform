@@ -9,6 +9,8 @@ using VigiaPlatform.API.Shared.Domain.Repositories;
 using VigiaPlatform.API.Shared.Infrastructure.Interfaces.Asp.Configuration;
 using VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCore.Configuration;
 using VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCore.Repositories;
+using VigiaPlatform.API.SiteReceptionAndVerification;
+using VigiaPlatform.API.SiteReceptionAndVerification.Infrastructure.Persistence.EntityFrameworkCore.Seeding;
 using VigiaPlatform.API.TransitTraceability;
 using VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Application.CommandServices;
 using VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Application.QueryServices;
@@ -46,6 +48,7 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 // Transit Traceability
 builder.Services.AddTransitTraceabilityContext();
+builder.Services.AddSiteReceptionAndVerificationContext();
 
 // Discrepancy and Evidence Management
 builder.Services.AddScoped<
@@ -75,8 +78,9 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference();
 
     using var scope = app.Services.CreateScope();
-    scope.ServiceProvider.GetRequiredService<AppDbContext>()
-        .Database.EnsureCreated();
+    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    dbContext.Database.EnsureCreated();
+    SiteReceptionSeeder.Seed(dbContext);
 }
 
 app.UseHttpsRedirection();
