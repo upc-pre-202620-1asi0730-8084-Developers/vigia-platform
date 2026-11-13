@@ -13,6 +13,7 @@ using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 using VigiaPlatform.API.IdentityAndAccessManagement;
 using VigiaPlatform.API.ProjectManagement;
+using VigiaPlatform.API.InventoryManagement;
 using VigiaPlatform.API.Shared.Domain.Repositories;
 using VigiaPlatform.API.Shared.Infrastructure.Interfaces.Asp.Configuration;
 using VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCore.Configuration;
@@ -37,6 +38,7 @@ builder.Services.AddControllers(options =>
 builder.Services.AddOpenApi();
 builder.Services.AddIdentityAndAccessManagementContext();
 builder.Services.AddProjectManagementContext();
+builder.Services.AddInventoryManagementContext();
 builder.Services.AddExceptionHandler<ApiExceptionHandler>();
 builder.Services.AddProblemDetails();
 
