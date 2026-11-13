@@ -11,6 +11,7 @@ using VigiaPlatform.API.FleetAndDeviceRegistry.Infrastructure.Persistence.Entity
 
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
+using VigiaPlatform.API.IdentityAndAccessManagement;
 using VigiaPlatform.API.Shared.Domain.Repositories;
 using VigiaPlatform.API.Shared.Infrastructure.Interfaces.Asp.Configuration;
 using VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCore.Configuration;
@@ -33,6 +34,9 @@ builder.Services.AddControllers(options =>
     options.Conventions.Add(new KebabCaseRouteNamingConvention()));
 
 builder.Services.AddOpenApi();
+builder.Services.AddIdentityAndAccessManagementContext();
+builder.Services.AddExceptionHandler<ApiExceptionHandler>();
+builder.Services.AddProblemDetails();
 
 builder.Services.AddCors(options => options.AddPolicy(
     FrontendCorsPolicy, policy => policy
@@ -96,9 +100,12 @@ if (app.Environment.IsDevelopment())
     SiteReceptionSeeder.Seed(dbContext);
 }
 
+app.UseExceptionHandler();
 app.UseHttpsRedirection();
 app.UseCors(FrontendCorsPolicy);
+app.UseRateLimiter();
+app.UseAuthentication();
 app.UseAuthorization();
-app.MapControllers();
+app.MapControllers().RequireAuthorization();
 
 app.Run();
