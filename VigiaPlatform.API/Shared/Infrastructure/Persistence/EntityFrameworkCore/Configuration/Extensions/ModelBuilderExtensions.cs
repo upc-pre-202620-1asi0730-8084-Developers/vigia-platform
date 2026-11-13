@@ -1,4 +1,4 @@
-﻿namespace VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCore.Configuration.Extensions;
+namespace VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCore.Configuration.Extensions;
 using Microsoft.EntityFrameworkCore;
 
 public static class ModelBuilderExtensions
@@ -7,6 +7,13 @@ public static class ModelBuilderExtensions
     {
         foreach (var entity in builder.Model.GetEntityTypes())
         {
+            var ownership = entity.FindOwnership();
+            if (ownership is not null && entity.GetTableName() == ownership.PrincipalEntityType.GetTableName())
+            {
+                for (var i = 0; i < ownership.Properties.Count; i++)
+                    ownership.Properties[i].SetColumnName(ownership.PrincipalKey.Properties[i].GetColumnName());
+            }
+
             var tableName = entity.GetTableName();
             if (!string.IsNullOrEmpty(tableName)) entity.SetTableName(tableName.ToPlural().ToSnakeCase());
 
