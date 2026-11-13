@@ -1,3 +1,7 @@
+using VigiaPlatform.API.FleetAndDeviceRegistry.Application.Internal.CommandServices;
+using VigiaPlatform.API.FleetAndDeviceRegistry.Application.Internal.QueryServices;
+using VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Repositories;
+using VigiaPlatform.API.FleetAndDeviceRegistry.Infrastructure.Persistence.EntityFrameworkCore.Repositories;
 
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
@@ -55,6 +59,13 @@ builder.Services.AddScoped<
 builder.Services.AddScoped<
     IDiscrepancyCaseCommandService,
     DiscrepancyCaseCommandService>();
+
+builder.Services.AddScoped<IVehicleRepository, VehicleRepository>();
+builder.Services.AddScoped<IGeofenceRepository, GeofenceRepository>();
+builder.Services.AddScoped<IVehicleCommandService, VehicleCommandService>();
+builder.Services.AddScoped<IGeofenceCommandService, GeofenceCommandService>();
+builder.Services.AddScoped<IVehicleQueryService, VehicleQueryService>();
+builder.Services.AddScoped<IGeofenceQueryService, GeofenceQueryService>();
 
 var app = builder.Build();
 
