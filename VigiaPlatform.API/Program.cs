@@ -12,6 +12,7 @@ using VigiaPlatform.API.FleetAndDeviceRegistry.Infrastructure.Persistence.Entity
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 using VigiaPlatform.API.IdentityAndAccessManagement;
+using VigiaPlatform.API.ProjectManagement;
 using VigiaPlatform.API.Shared.Domain.Repositories;
 using VigiaPlatform.API.Shared.Infrastructure.Interfaces.Asp.Configuration;
 using VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCore.Configuration;
@@ -35,6 +36,7 @@ builder.Services.AddControllers(options =>
 
 builder.Services.AddOpenApi();
 builder.Services.AddIdentityAndAccessManagementContext();
+builder.Services.AddProjectManagementContext();
 builder.Services.AddExceptionHandler<ApiExceptionHandler>();
 builder.Services.AddProblemDetails();
 
