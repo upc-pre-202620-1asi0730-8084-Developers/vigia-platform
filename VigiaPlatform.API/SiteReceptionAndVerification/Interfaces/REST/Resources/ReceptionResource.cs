@@ -69,5 +69,11 @@ public record ReceptionResource(
     DigitalSignatureResource? DigitalSignature,
     DiscrepancyDetailsResource? Discrepancy,
     List<ReceptionItemResource> Items,
-    List<ReceptionEvidenceResource> Evidences
+    List<ReceptionEvidenceResource> Evidences,
+    string? VerifiedByUserId,
+    bool IsPhysicalVerification,
+    bool MaterialGoodCondition,
+    bool QuantityVerified,
+    bool DeliveryGuideReceived,
+    bool ObservationsRecorded
 );

@@ -8,6 +8,7 @@ using VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Interfaces.REST.Transfo
 
 namespace VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Interfaces.REST;
 
+[Microsoft.AspNetCore.Authorization.Authorize(Roles = "ADMIN,SITE_MANAGER")]
 [ApiController]
 [Route("api/v1/discrepancy-cases")]
 public class DiscrepancyCasesController(

@@ -12,6 +12,7 @@ namespace VigiaPlatform.API.TransitTraceability.Interfaces.REST.Controllers;
 /// <summary>
 /// Route tracking endpoints of the Transit Traceability bounded context (BC-06).
 /// </summary>
+[Microsoft.AspNetCore.Authorization.Authorize(Roles = "ADMIN,WAREHOUSE_MANAGER,SITE_MANAGER")]
 [ApiController]
 [Route("api/v1/[controller]")]
 [Produces(MediaTypeNames.Application.Json)]

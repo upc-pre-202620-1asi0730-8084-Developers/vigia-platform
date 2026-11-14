@@ -13,7 +13,7 @@ using VigiaPlatform.API.SiteReceptionAndVerification.Domain.Model.ValueObjects;
 /// 3. Verify received material (comparison of dispatched vs received quantities)
 /// 4. Conformity assessment: Record compliance (office closed) OR Report discrepancy & Attach evidence.
 /// </summary>
-public class Reception : IAuditableEntity
+public partial class Reception : IAuditableEntity
 {
     private readonly List<ReceptionItem> _items = [];
     private readonly List<ReceptionEvidence> _evidences = [];
@@ -147,7 +147,7 @@ public class Reception : IAuditableEntity
     {
         EnsureNotClosed();
 
-        if (Status != ReceptionStatus.MaterialVerified && Status != ReceptionStatus.ReceiptConfirmed)
+        if (Status != ReceptionStatus.MaterialVerified || _items.Count == 0 || _items.Any(i => !i.IsVerified || i.HasDiscrepancy))
             throw new SiteReceptionException(SiteReceptionErrorCodes.InvalidStateTransition,
                 $"Cannot record conformity from status '{Status}'.");
 
@@ -204,7 +204,7 @@ public class Reception : IAuditableEntity
 
     private void EnsureNotClosed()
     {
-        if (Status == ReceptionStatus.ConformantClosed)
+        if (Status is ReceptionStatus.ConformantClosed or ReceptionStatus.Rejected)
             throw new SiteReceptionException(SiteReceptionErrorCodes.ReceptionAlreadyClosed,
                 $"Reception {Id} is already closed conformant and cannot be modified.");
     }

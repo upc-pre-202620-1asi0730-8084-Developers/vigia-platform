@@ -11,6 +11,7 @@ using VigiaPlatform.API.Order_management_and_distpatch.Interfaces.Rest.Transform
 
 namespace VigiaPlatform.API.Order_management_and_distpatch.Interfaces.Rest;
 
+[Microsoft.AspNetCore.Authorization.Authorize(Roles = "ADMIN,WAREHOUSE_MANAGER")]
 [ApiController]
 [Route("api/v1/dispatches")]
 [Produces(MediaTypeNames.Application.Json)]
@@ -126,7 +127,7 @@ public class DispatchesController(
     {
         try
         {
-            var command = DispatchCommandFromResourceAssembler.ToCommandFromResource(dispatchId, resource);
+            var command = DispatchCommandFromResourceAssembler.ToCommandFromResource(dispatchId, resource with { PerformedBy = User.Identity!.Name! });
             var result = await dispatchCommandService.Handle(command, cancellationToken);
 
             return DispatchActionResultAssembler.ToActionResultFromDispatchResult(
@@ -152,7 +153,7 @@ public class DispatchesController(
     public async Task<IActionResult> RemoveDispatchItem(int dispatchId, int itemId,
         [FromBody] RemoveDispatchItemResource resource, CancellationToken cancellationToken)
     {
-        var command = DispatchCommandFromResourceAssembler.ToCommandFromResource(dispatchId, itemId, resource);
+        var command = DispatchCommandFromResourceAssembler.ToCommandFromResource(dispatchId, itemId, resource with { PerformedBy = User.Identity!.Name! });
         var result = await dispatchCommandService.Handle(command, cancellationToken);
 
         return DispatchActionResultAssembler.ToActionResultFromDispatchResult(
@@ -176,7 +177,7 @@ public class DispatchesController(
     {
         try
         {
-            var command = DispatchCommandFromResourceAssembler.ToCommandFromResource(dispatchId, resource);
+            var command = DispatchCommandFromResourceAssembler.ToCommandFromResource(dispatchId, resource with { PerformedBy = User.Identity!.Name! });
             var result = await dispatchCommandService.Handle(command, cancellationToken);
 
             return DispatchActionResultAssembler.ToActionResultFromDispatchResult(
@@ -205,7 +206,7 @@ public class DispatchesController(
     {
         try
         {
-            var command = DispatchCommandFromResourceAssembler.ToCommandFromResource(dispatchId, resource);
+            var command = DispatchCommandFromResourceAssembler.ToCommandFromResource(dispatchId, resource with { PerformedBy = User.Identity!.Name! });
             var result = await dispatchCommandService.Handle(command, cancellationToken);
 
             return DispatchActionResultAssembler.ToActionResultFromDispatchResult(
@@ -231,7 +232,7 @@ public class DispatchesController(
     public async Task<IActionResult> CancelDispatch(int dispatchId, [FromBody] CancelDispatchResource resource,
         CancellationToken cancellationToken)
     {
-        var command = DispatchCommandFromResourceAssembler.ToCommandFromResource(dispatchId, resource);
+        var command = DispatchCommandFromResourceAssembler.ToCommandFromResource(dispatchId, resource with { PerformedBy = User.Identity!.Name! });
         var result = await dispatchCommandService.Handle(command, cancellationToken);
 
         return DispatchActionResultAssembler.ToActionResultFromDispatchResult(

@@ -31,7 +31,7 @@ public class ReceptionItem
             throw new SiteReceptionException(SiteReceptionErrorCodes.ItemNotFound, "Material name is required.");
         if (string.IsNullOrWhiteSpace(unit))
             throw new SiteReceptionException(SiteReceptionErrorCodes.ItemNotFound, "Unit of measure is required.");
-        if (dispatchedQuantity < 0)
+        if (!double.IsFinite(dispatchedQuantity) || dispatchedQuantity < 0)
             throw new SiteReceptionException(SiteReceptionErrorCodes.InvalidArrival, "Dispatched quantity cannot be negative.");
 
         MaterialId = materialId.Trim();
@@ -47,7 +47,7 @@ public class ReceptionItem
     /// </summary>
     public void Verify(double receivedQuantity, string? comments = null)
     {
-        if (receivedQuantity < 0)
+        if (!double.IsFinite(receivedQuantity) || receivedQuantity < 0)
             throw new SiteReceptionException(SiteReceptionErrorCodes.InvalidArrival, "Received quantity cannot be negative.");
 
         ReceivedQuantity = Math.Round(receivedQuantity, 2);

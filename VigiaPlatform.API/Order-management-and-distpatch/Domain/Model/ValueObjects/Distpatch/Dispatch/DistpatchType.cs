@@ -2,5 +2,7 @@
 
 public enum DispatchType
 {
-    DepartureToWork
+    DepartureToWork,
+    Transfer,
+    Return
 }

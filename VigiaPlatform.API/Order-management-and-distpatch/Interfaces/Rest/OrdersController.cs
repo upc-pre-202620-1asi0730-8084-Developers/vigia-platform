@@ -10,6 +10,7 @@ using VigiaPlatform.API.Order_management_and_distpatch.Interfaces.Rest.Transform
 
 namespace VigiaPlatform.API.Order_management_and_distpatch.Interfaces.Rest;
 
+[Microsoft.AspNetCore.Authorization.Authorize(Roles = "ADMIN,WAREHOUSE_MANAGER")]
 [ApiController]
 [Route("api/v1/orders")]
 [Produces(MediaTypeNames.Application.Json)]
@@ -115,7 +116,7 @@ public class OrdersController(
     {
         try
         {
-            var command = OrderCommandFromResourceAssembler.ToCommandFromResource(orderId, resource);
+            var command = OrderCommandFromResourceAssembler.ToCommandFromResource(orderId, resource with { PerformedBy = User.Identity!.Name! });
             var result = await orderCommandService.Handle(command, cancellationToken);
 
             return OrderActionResultAssembler.ToActionResultFromOrderResult(
@@ -144,7 +145,7 @@ public class OrdersController(
     {
         try
         {
-            var command = OrderCommandFromResourceAssembler.ToCommandFromResource(orderId, resource);
+            var command = OrderCommandFromResourceAssembler.ToCommandFromResource(orderId, resource with { PerformedBy = User.Identity!.Name! });
             var result = await orderCommandService.Handle(command, cancellationToken);
 
             return OrderActionResultAssembler.ToActionResultFromOrderResult(

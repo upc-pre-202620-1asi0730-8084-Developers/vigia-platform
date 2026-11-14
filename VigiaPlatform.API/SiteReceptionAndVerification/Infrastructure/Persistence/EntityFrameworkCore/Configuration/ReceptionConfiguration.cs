@@ -34,6 +34,7 @@ public class ReceptionConfiguration : IEntityTypeConfiguration<Reception>
         builder.Property(r => r.ArrivalRegisteredAt).IsRequired();
         builder.Property(r => r.DeliveryNoteNumber).HasMaxLength(50);
         builder.Property(r => r.ReceiverNotes).HasMaxLength(500);
+        builder.Property(r => r.VerifiedByUserId).HasMaxLength(50);
         builder.Property(r => r.ClosedAt);
 
         // Owned Value Object: ScaleWeight

@@ -82,7 +82,9 @@ public static class ReceptionAssembler
                 entity.Discrepancy.ReportedAt
             ),
             entity.Items.Select(ToItemResource).ToList(),
-            entity.Evidences.Select(ToEvidenceResource).ToList()
+            entity.Evidences.Select(ToEvidenceResource).ToList(),
+            entity.VerifiedByUserId, entity.IsPhysicalVerification, entity.MaterialGoodCondition,
+            entity.QuantityVerified, entity.DeliveryGuideReceived, entity.ObservationsRecorded
         );
     }
 
