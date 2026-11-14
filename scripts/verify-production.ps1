@@ -13,6 +13,7 @@ if (!$Dotnet) {
 }
 $configuration = Get-Content -LiteralPath $ConfigurationFile -Raw | ConvertFrom-Json
 $connection = [System.Data.Common.DbConnectionStringBuilder]::new()
+# Use CLR accessors because PowerShell treats this builder as a dictionary.
 $connection.set_ConnectionString($configuration.ConnectionStrings.DefaultConnection)
 foreach ($key in @($connection.get_Keys())) {
     if ($key -match '^(database|initial catalog)$') { [void]$connection.Remove($key) }
@@ -86,6 +87,8 @@ try {
     $assembly = Join-Path $publishDirectory 'VigiaPlatform.API.dll'
     & $Dotnet $assembly --migrate *> (Join-Path $outputDirectory 'migration.log')
     if ($LASTEXITCODE -ne 0) { throw "Migration failed. See $outputDirectory." }
+    & $Dotnet $assembly --migrate *> (Join-Path $outputDirectory 'migration-repeat.log')
+    if ($LASTEXITCODE -ne 0) { throw 'Repeated migration failed on a database with the complete migration history.' }
     & $Dotnet $assembly --bootstrap-admin *> (Join-Path $outputDirectory 'bootstrap.log')
     if ($LASTEXITCODE -ne 0) { throw "Administrator provisioning failed. See $outputDirectory." }
     $env:BootstrapAdmin__Password = 'A-different-password-that-must-not-reset-the-account'

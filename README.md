@@ -12,6 +12,8 @@ Requires .NET 10 and MySQL. Store `ConnectionStrings:DefaultConnection` in user-
 
 For the first migration, use an empty database. Existing databases created with `EnsureCreated()` must be preserved or backed up and transitioned separately; do not apply `InitialCreate` over their existing tables.
 
+Both Development startup and the `--migrate` operation reject a nonempty database that does not have this migration chain's initial history entry, before changing its schema. In Rider, select a profile connected to the migrated database. The normal Run button does not apply the temporary connection override performed by `scripts/start-local.ps1`.
+
 ```powershell
 $env:ASPNETCORE_ENVIRONMENT = "Development"
 dotnet ef database update --project VigiaPlatform.API
