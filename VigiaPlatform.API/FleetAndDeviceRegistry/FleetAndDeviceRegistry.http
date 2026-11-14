@@ -1,0 +1,107 @@
+@VigiaPlatform_HostAddress = http://localhost:5125
+
+### 1. Register a new Vehicle (without GPS initially)
+POST {{VigiaPlatform_HostAddress}}/api/v1/vehicles
+Content-Type: application/json
+
+{
+  "companyId": "COMP-001",
+  "licensePlate": "ABC-123",
+  "brand": "Volvo",
+  "model": "FH16",
+  "maxCapacityTons": 32.5
+}
+
+### 2. Register a new Vehicle (with GPS paired)
+POST {{VigiaPlatform_HostAddress}}/api/v1/vehicles
+Content-Type: application/json
+
+{
+  "companyId": "COMP-001",
+  "licensePlate": "XYZ-789",
+  "brand": "Scania",
+  "model": "R500",
+  "maxCapacityTons": 28.0,
+  "gpsDeviceId": "GPS-TRK-002"
+}
+
+### 3. Get all Vehicles
+GET {{VigiaPlatform_HostAddress}}/api/v1/vehicles
+Accept: application/json
+
+### 4. Get Vehicles filtered by GPS pairing status (paired = true)
+GET {{VigiaPlatform_HostAddress}}/api/v1/vehicles?isGpsPaired=true
+Accept: application/json
+
+### 5. Get Vehicles filtered by GPS pairing status (paired = false)
+GET {{VigiaPlatform_HostAddress}}/api/v1/vehicles?isGpsPaired=false
+Accept: application/json
+
+### 6. Get Vehicle by ID
+GET {{VigiaPlatform_HostAddress}}/api/v1/vehicles/1
+Accept: application/json
+
+### 7. Pair a GPS device to a Vehicle (1:1)
+POST {{VigiaPlatform_HostAddress}}/api/v1/vehicles/1/gps-device
+Content-Type: application/json
+
+{
+  "gpsDeviceId": "GPS-TRK-001"
+}
+
+### 8. Update Vehicle real-time WGS84 position
+POST {{VigiaPlatform_HostAddress}}/api/v1/vehicles/1/position
+Content-Type: application/json
+
+{
+  "latitude": -12.046374,
+  "longitude": -77.042793
+}
+
+### 9. Define a Warehouse Geofence
+POST {{VigiaPlatform_HostAddress}}/api/v1/geofences
+Content-Type: application/json
+
+{
+  "companyId": "COMP-001",
+  "siteId": "WH-LIMA-01",
+  "name": "Almacén Central Callao",
+  "type": "WAREHOUSE",
+  "centerPoint": {
+    "latitude": -12.056000,
+    "longitude": -77.118000
+  },
+  "radiusMeters": 250.0
+}
+
+### 10. Define a Job Site Geofence
+POST {{VigiaPlatform_HostAddress}}/api/v1/geofences
+Content-Type: application/json
+
+{
+  "companyId": "COMP-001",
+  "siteId": "SITE-MIRAFLORES-01",
+  "name": "Obra Torre Miraflores",
+  "type": "JOB_SITE",
+  "centerPoint": {
+    "latitude": -12.119000,
+    "longitude": -77.030000
+  },
+  "radiusMeters": 150.0
+}
+
+### 11. Get all Geofences
+GET {{VigiaPlatform_HostAddress}}/api/v1/geofences
+Accept: application/json
+
+### 12. Get Geofences filtered by type (WAREHOUSE or JOB_SITE)
+GET {{VigiaPlatform_HostAddress}}/api/v1/geofences?type=WAREHOUSE
+Accept: application/json
+
+### 13. Get Geofences filtered by type JOB_SITE
+GET {{VigiaPlatform_HostAddress}}/api/v1/geofences?type=JOB_SITE
+Accept: application/json
+
+### 14. Get Geofence by ID
+GET {{VigiaPlatform_HostAddress}}/api/v1/geofences/1
+Accept: application/json

@@ -1,0 +1,17 @@
+**/bin
+**/obj
+.git
+.idea
+.vs
+.vscode
+.claude
+.codex
+.local
+**/.local
+**/appsettings.Development*.json
+**/.env
+**/.env.*
+**/*.pem
+**/*.key
+tests
+deploy

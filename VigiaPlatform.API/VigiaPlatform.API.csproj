@@ -5,7 +5,12 @@
         <LangVersion>14.0</LangVersion>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
+        <UserSecretsId>e85eef46-0d74-4792-8c24-20fec9541c9c</UserSecretsId>
     </PropertyGroup>
+
+    <ItemGroup>
+        <Content Update="appsettings.Development.json" CopyToPublishDirectory="Never" />
+    </ItemGroup>
 
     <ItemGroup>
         <!-- OpenAPI related packages -->

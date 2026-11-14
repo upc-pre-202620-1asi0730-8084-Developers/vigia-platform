@@ -7,3 +7,8 @@ riderModule.iml
 .vs/
 .vscode/
 *.user
+.local/
+deploy/azure/.env
+
+# Datos temporales de órdenes
+VigiaPlatform.API/Order-management-and-distpatch/Domain/Model/ValueObjects/temporaly_orders.json
