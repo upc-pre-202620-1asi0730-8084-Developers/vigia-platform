@@ -1,5 +1,11 @@
 # vigia-platform
 
+## Azure deployment
+
+Deployment now targets an Ubuntu VM in Azure, with the API and MySQL managed by Docker Compose and Caddy providing HTTPS. The frontend remains on Firebase Hosting. Follow [the Azure resource and deployment guide](deploy/azure/README.md).
+
+The API supports one-off `--migrate` and `--bootstrap-admin` operations, persistent Data Protection keys through `DataProtection__KeysPath`, forwarded headers from `ReverseProxy__KnownProxy`, opt-in production Scalar through `OpenApi__Enabled=true`, and a database connectivity endpoint at `/health`. Production startup does not run the local demo setup. Private development settings are excluded from publish output.
+
 ## Database migrations
 
 Requires .NET 10 and MySQL. Store `ConnectionStrings:DefaultConnection` in user-secrets for `VigiaPlatform.API`; do not commit database credentials.
