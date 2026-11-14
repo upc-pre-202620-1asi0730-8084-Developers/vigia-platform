@@ -56,4 +56,23 @@ using (var db = new AppDbContext(options))
     await new UnitOfWork(db, [new ActivityChangeRecorder(db, accessor)]).CompleteAsync();
     if (await db.Set<ActivityRecord>().CountAsync() != before + 1) throw new Exception("Child-only telemetry changes were not audited.");
 }
-Console.WriteLine($"PASS: complete migration chain, real MySQL rollback, atomic success and telemetry history. Isolated database: {connection.Database}");
+var legacyConnection = new MySqlConnectionStringBuilder(connection.ConnectionString) { Database = connection.Database + "_legacy" };
+using (var legacy = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>().UseMySQL(legacyConnection.ConnectionString).Options))
+{
+    await legacy.Database.EnsureCreatedAsync();
+    legacy.Add(new VigiaPlatform.API.ProjectManagement.Domain.Model.ConstructionProject("Legacy Safety Check", "LIMA", "Lima", null, "Legacy Resident"));
+    await legacy.SaveChangesAsync();
+    await using var inspection = new MySqlConnection(legacyConnection.ConnectionString);
+    await inspection.OpenAsync();
+    await using var countTables = inspection.CreateCommand();
+    countTables.CommandText = "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE()";
+    var schemaTablesBefore = Convert.ToInt64(await countTables.ExecuteScalarAsync());
+    var rejected = false;
+    try { await DatabaseMigrationRunner.MigrateAsync(legacy); }
+    catch (InvalidOperationException error) when (error.Message.StartsWith("Existing tables do not belong")) { rejected = true; }
+    if (!rejected || Convert.ToInt64(await countTables.ExecuteScalarAsync()) != schemaTablesBefore ||
+        (await legacy.Database.GetAppliedMigrationsAsync()).Any() ||
+        await legacy.Set<VigiaPlatform.API.ProjectManagement.Domain.Model.ConstructionProject>().CountAsync() != 1)
+        throw new Exception("The legacy-schema guard failed to preserve the existing schema and data.");
+}
+Console.WriteLine($"PASS: complete migration chain, real MySQL rollback, atomic success, telemetry history and rejection of an isolated EnsureCreated schema without altering its records. Database: {connection.Database}");

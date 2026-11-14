@@ -119,7 +119,7 @@ if (migrateOnly || bootstrapAdmin)
 {
     using var scope = app.Services.CreateScope();
     if (migrateOnly)
-        await scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.MigrateAsync();
+        await DatabaseMigrationRunner.MigrateAsync(scope.ServiceProvider.GetRequiredService<AppDbContext>());
     else
         await VigiaPlatform.API.IdentityAndAccessManagement.Infrastructure.Operations.AdministratorProvisioning.RunAsync(
             scope.ServiceProvider, builder.Configuration);
@@ -139,7 +139,7 @@ if (app.Environment.IsDevelopment())
     if (builder.Configuration.GetValue<bool>("Development:SeedDemoData") &&
         !dbContext.Database.GetDbConnection().Database.StartsWith("vigia_local_", StringComparison.Ordinal))
         throw new InvalidOperationException("Demo setup requires a separate database prefixed vigia_local_.");
-    await dbContext.Database.MigrateAsync();
+    await DatabaseMigrationRunner.MigrateAsync(dbContext);
     await VigiaPlatform.API.Shared.Infrastructure.Development.LocalIntegrationSeeder.SeedAsync(scope.ServiceProvider, builder.Configuration);
 }
 

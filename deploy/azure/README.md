@@ -64,6 +64,8 @@ sudo bash deploy.sh
 
 The script validates configuration, builds the API, waits for MySQL, applies migrations in a one-off process, provisions the initial administrator, then starts the API and Caddy. It stops on a failing command. Normal Production startup does not apply migrations or seed demo data.
 
+Migration startup checks for this migration chain before changing an existing nonempty schema. It rejects databases created with EnsureCreated or partially initialized outside the chain. Use a fresh database or a separately reviewed transition, rather than bypassing that check.
+
 Administrator provisioning creates an ADMIN account only if no administrator exists. Re-running it neither resets an existing password nor promotes an existing normal account. The bootstrap password is passed only to the one-off provisioning container, not to the long-running API.
 
 Caddy requests and renews a public TLS certificate once DNS points to this VM and the required ports are reachable. See [automatic HTTPS requirements](https://caddyserver.com/docs/automatic-https). The API trusts forwarded headers only from the configured proxy address; keep `ReverseProxy__KnownProxy` and the Caddy IP aligned if changing the Docker subnet.
