@@ -18,7 +18,8 @@ namespace VigiaPlatform.API.Order_management_and_distpatch.Interfaces.Rest;
 [Tags("Dispatches")]
 public class DispatchesController(
     IDispatchCommandService dispatchCommandService,
-    IDispatchQueryService dispatchQueryService) : ControllerBase
+    IDispatchQueryService dispatchQueryService,
+    Infrastructure.Integration.DispatchPlanningService planningService) : ControllerBase
 {
     /// <summary>
     ///     Gets all dispatches, optionally filtered by status, departure date or related order.
@@ -177,6 +178,7 @@ public class DispatchesController(
     {
         try
         {
+            await planningService.ValidateVehicleAsync(resource.VehicleId, resource.VehiclePlate, cancellationToken);
             var command = DispatchCommandFromResourceAssembler.ToCommandFromResource(dispatchId, resource with { PerformedBy = User.Identity!.Name! });
             var result = await dispatchCommandService.Handle(command, cancellationToken);
 

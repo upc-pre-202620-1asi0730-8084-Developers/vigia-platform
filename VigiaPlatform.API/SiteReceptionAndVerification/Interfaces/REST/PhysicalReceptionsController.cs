@@ -24,4 +24,21 @@ public class PhysicalReceptionsController(PhysicalReceptionService service) : Co
         var reception = await service.VerifyAsync(id, input, User.FindFirstValue(ClaimTypes.NameIdentifier)!, ct);
         return reception is null ? NotFound() : Ok(ReceptionAssembler.ToResourceFromEntity(reception));
     }
+
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> Update(int id, PhysicalArrival input, CancellationToken ct)
+    {
+        var reception = await service.UpdateAsync(id, input, User.FindFirstValue(ClaimTypes.NameIdentifier)!, ct);
+        return reception is null ? NotFound() : Ok(ReceptionAssembler.ToResourceFromEntity(reception));
+    }
+
+    [HttpPost("{id:int}/compare")]
+    public async Task<IActionResult> Compare(int id, PhysicalComparison input, CancellationToken ct)
+    {
+        var reception = await service.CompareAsync(id, input, User.FindFirstValue(ClaimTypes.NameIdentifier)!, ct);
+        return reception is null ? NotFound() : Ok(new {
+            isConformant = !reception.HasAnyDiscrepancy, hasDiscrepancy = reception.HasAnyDiscrepancy,
+            items = reception.Items.Select(ReceptionAssembler.ToItemResource), reception = ReceptionAssembler.ToResourceFromEntity(reception)
+        });
+    }
 }

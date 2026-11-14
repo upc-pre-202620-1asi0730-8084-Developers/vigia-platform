@@ -275,6 +275,44 @@ namespace VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCor
                     b.ToTable("vehicles");
                 });
 
+            modelBuilder.Entity("VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Model.Entities.UnassociatedTelemetryEvent", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    b.Property<string>("GpsDeviceId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("gps_device_id");
+
+                    b.Property<double>("Latitude")
+                        .HasColumnType("double")
+                        .HasColumnName("latitude");
+
+                    b.Property<double>("Longitude")
+                        .HasColumnType("double")
+                        .HasColumnName("longitude");
+
+                    b.Property<DateTimeOffset>("RegisteredAt")
+                        .HasColumnType("datetime")
+                        .HasColumnName("registered_at");
+
+                    b.Property<DateTimeOffset>("ReportedAt")
+                        .HasColumnType("datetime")
+                        .HasColumnName("reported_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_unassociated_telemetry_events");
+
+                    b.HasIndex("GpsDeviceId", "ReportedAt")
+                        .HasDatabaseName("ix_unassociated_telemetry_events_gps_device_id_reported_at");
+
+                    b.ToTable("unassociated_telemetry_events", (string)null);
+                });
+
             modelBuilder.Entity("VigiaPlatform.API.IdentityAndAccessManagement.Domain.Model.UserAccount", b =>
                 {
                     b.Property<int>("Id")

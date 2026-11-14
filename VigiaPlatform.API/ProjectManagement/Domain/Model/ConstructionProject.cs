@@ -16,8 +16,8 @@ public class ConstructionProject
     public ConstructionProject(string name, string zone, string city, string? managerId, string managerName,
         decimal progress = 0, string status = "IN_PROGRESS")
     {
-        if (string.IsNullOrWhiteSpace(name) || progress is < 0 or > 100)
-            throw new ArgumentException("Project name and progress between 0 and 100 are required.");
+        if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(city) || progress is < 0 or > 100)
+            throw new ArgumentException("Project name, city and progress between 0 and 100 are required.");
         if (status is not ("IN_PROGRESS" or "AT_RISK" or "DELAYED"))
             throw new ArgumentException("Unknown project status.");
         Name = name.Trim();

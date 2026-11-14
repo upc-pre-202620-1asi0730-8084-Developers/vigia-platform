@@ -15,6 +15,14 @@ public record DispatchPlan(string ProjectName, string RelatedOrderId, string Dep
 
 public class DispatchPlanningService(AppDbContext db, IUnitOfWork unitOfWork)
 {
+    public async Task ValidateVehicleAsync(int vehicleId, string plate, CancellationToken ct)
+    {
+        var vehicle = await db.Vehicles.SingleOrDefaultAsync(v => v.Id == vehicleId, ct)
+            ?? throw new ArgumentException("Vehicle does not exist.");
+        if (!string.Equals(vehicle.LicensePlate.Value, plate?.Trim(), StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException("Vehicle and license plate do not match.");
+    }
+
     public async Task<Dispatch> PlanAsync(DispatchPlan input, string actor, CancellationToken ct)
     {
         if (!int.TryParse(input.RelatedOrderId, out var orderId)) throw new ArgumentException("An approved order is required.");
@@ -28,7 +36,7 @@ public class DispatchPlanningService(AppDbContext db, IUnitOfWork unitOfWork)
         var resource = new CreateDispatchResource(project.Name, project.Id.ToString(), project.City,
             input.DepartureDate, input.EstimatedTime, order.Id.ToString(), input.DispatchType, input.Priority,
             actor, $"REF-{Guid.NewGuid():N}", input.Observations,
-            order.Items.Select(i => new CreateDispatchItemResource($"MAT-{i.Id}", i.Material.Value, i.Quantity.Value, i.Unit.ToString(), i.Observation.Value)).ToList());
+            order.Items.Select(i => new CreateDispatchItemResource($"MAT-{i.Id:D4}", i.Material.Value, i.Quantity.Value, i.Unit.ToString(), i.Observation.Value)).ToList());
         var dispatch = new Dispatch(CreateDispatchCommandFromResourceAssembler.ToCommandFromResource(resource), DateTime.UtcNow);
         dispatch.ChangeStatus(DispatchStatus.InPreparation, actor, null, DateTime.UtcNow);
         db.Add(dispatch);
