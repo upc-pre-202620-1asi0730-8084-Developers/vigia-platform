@@ -5,5 +5,6 @@ public enum UnitType
     t,
     kg,
     m,
-    u
+    u,
+    pcs
 }

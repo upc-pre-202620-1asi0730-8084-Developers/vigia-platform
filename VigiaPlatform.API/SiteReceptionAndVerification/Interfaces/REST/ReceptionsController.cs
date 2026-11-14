@@ -14,6 +14,7 @@ using VigiaPlatform.API.SiteReceptionAndVerification.Interfaces.REST.Transform;
 /// REST API endpoints for the Site Reception and Verification Bounded Context (BC-07).
 /// Implements the on-site verification flow executed by the Site Resident actor.
 /// </summary>
+[Microsoft.AspNetCore.Authorization.Authorize(Roles = "ADMIN,SITE_MANAGER")]
 [ApiController]
 [Route("api/v1/[controller]")]
 [Produces(MediaTypeNames.Application.Json)]

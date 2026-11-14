@@ -943,6 +943,10 @@ namespace VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCor
                         .HasColumnType("datetime")
                         .HasColumnName("created_at");
 
+                    b.Property<bool>("DeliveryGuideReceived")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("delivery_guide_received");
+
                     b.Property<string>("DeliveryNoteNumber")
                         .HasMaxLength(50)
                         .HasColumnType("varchar(50)")
@@ -959,6 +963,22 @@ namespace VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCor
                         .HasMaxLength(150)
                         .HasColumnType("varchar(150)")
                         .HasColumnName("driver_name");
+
+                    b.Property<bool>("IsPhysicalVerification")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("is_physical_verification");
+
+                    b.Property<bool>("MaterialGoodCondition")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("material_good_condition");
+
+                    b.Property<bool>("ObservationsRecorded")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("observations_recorded");
+
+                    b.Property<bool>("QuantityVerified")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("quantity_verified");
 
                     b.Property<string>("ReceiverNotes")
                         .HasMaxLength(500)
@@ -990,6 +1010,11 @@ namespace VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCor
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("datetime")
                         .HasColumnName("updated_at");
+
+                    b.Property<string>("VerifiedByUserId")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("verified_by_user_id");
 
                     b.HasKey("Id")
                         .HasName("pk_receptions");

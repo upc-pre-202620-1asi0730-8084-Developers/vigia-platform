@@ -9,6 +9,7 @@ using VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Exceptions;
 using VigiaPlatform.API.FleetAndDeviceRegistry.Interfaces.REST.Resources;
 using VigiaPlatform.API.FleetAndDeviceRegistry.Interfaces.REST.Transform;
 
+[Microsoft.AspNetCore.Authorization.Authorize(Roles = "ADMIN,WAREHOUSE_MANAGER")]
 [ApiController]
 [Route("api/v1/[controller]")]
 [Produces(MediaTypeNames.Application.Json)]
