@@ -50,7 +50,7 @@ chmod 600 .env
 nano .env
 ```
 
-Set `API_DOMAIN` to the real public DNS name without `https://` or a path. Set an operational email for certificate registration. Generate three different passwords, for example by running `openssl rand -hex 24` three times, for the MySQL application user, MySQL root and the initial administrator. Paste them only into the protected `.env`; keep their secure copy. Hex passwords avoid connection-string and dotenv separator issues. Keep this file outside Git.
+Set `API_DOMAIN` to the real public DNS name without `https://` or a path. Caddy obtains HTTPS certificates automatically without requiring an account email. Generate three different passwords, for example by running `openssl rand -hex 24` three times, for the MySQL application user, MySQL root and the initial administrator. Paste them only into the protected `.env`; keep their secure copy. Hex passwords avoid connection-string and dotenv separator issues. Keep this file outside Git.
 
 Do not reuse the local demonstration credentials. `OPENAPI_ENABLED=true` keeps Scalar available for the academic requirement; change it to false if API documentation should be disabled later.
 
