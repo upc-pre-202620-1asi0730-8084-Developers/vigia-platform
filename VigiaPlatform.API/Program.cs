@@ -20,7 +20,6 @@ using VigiaPlatform.API.Shared.Infrastructure.Interfaces.Asp.Configuration;
 using VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCore.Configuration;
 using VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCore.Repositories;
 using VigiaPlatform.API.SiteReceptionAndVerification;
-using VigiaPlatform.API.SiteReceptionAndVerification.Infrastructure.Persistence.EntityFrameworkCore.Seeding;
 using VigiaPlatform.API.TransitTraceability;
 using VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Application.CommandServices;
 using VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Application.QueryServices;
@@ -43,6 +42,7 @@ builder.Services.AddInventoryManagementContext();
 builder.Services.AddActivityHistoryContext();
 builder.Services.AddExceptionHandler<ApiExceptionHandler>();
 builder.Services.AddProblemDetails();
+builder.Services.AddScoped<VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Infrastructure.Reporting.DiscrepancyReportService>();
 builder.Services.AddScoped<VigiaPlatform.API.SiteReceptionAndVerification.Infrastructure.Integration.PhysicalReceptionService>();
 builder.Services.AddScoped<VigiaPlatform.API.Order_management_and_distpatch.Infrastructure.Integration.DispatchPlanningService>();
 
@@ -104,8 +104,11 @@ if (app.Environment.IsDevelopment())
 
     using var scope = app.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    if (builder.Configuration.GetValue<bool>("Development:SeedDemoData") &&
+        !dbContext.Database.GetDbConnection().Database.StartsWith("vigia_local_", StringComparison.Ordinal))
+        throw new InvalidOperationException("Demo setup requires a separate database prefixed vigia_local_.");
     await dbContext.Database.MigrateAsync();
-    SiteReceptionSeeder.Seed(dbContext);
+    await VigiaPlatform.API.Shared.Infrastructure.Development.LocalIntegrationSeeder.SeedAsync(scope.ServiceProvider, builder.Configuration);
 }
 
 app.UseExceptionHandler();

@@ -15,6 +15,8 @@ public record PhysicalChecklist(bool MaterialGoodCondition, bool QuantityVerifie
 public record PhysicalArrival(string DispatchId, string DeliveryGuideNumber, string DriverName, List<PhysicalItem> Items,
     PhysicalChecklist Checklist, string? Observations);
 public record PhysicalVerification(string Status, PhysicalChecklist Checklist, string? Observations);
+public record PhysicalQuantity(int Id, double ReceivedQuantity);
+public record PhysicalComparison(List<PhysicalQuantity> Items);
 
 public class PhysicalReceptionService(AppDbContext db, IUnitOfWork unitOfWork)
 {
@@ -53,6 +55,50 @@ public class PhysicalReceptionService(AppDbContext db, IUnitOfWork unitOfWork)
 
     public async Task<Reception?> FindAsync(int id, CancellationToken ct) => await db.Set<Reception>()
         .Include(r => r.Items).Include(r => r.Evidences).AsSplitQuery().SingleOrDefaultAsync(r => r.Id == id, ct);
+
+    public async Task<Reception?> UpdateAsync(int id, PhysicalArrival input, string actorId, CancellationToken ct)
+    {
+        var reception = await FindAsync(id, ct);
+        if (reception is null) return null;
+        EnsureEditableBy(reception, actorId);
+        if (input.DispatchId != reception.DispatchId || input.Items.Count != reception.Items.Count)
+            throw new ArgumentException("Reception must retain its dispatch and expected material lines.");
+        var remaining = input.Items.ToList();
+        foreach (var item in reception.Items)
+        {
+            var received = remaining.FirstOrDefault(i => string.Equals(i.MaterialName, item.MaterialName, StringComparison.OrdinalIgnoreCase))
+                ?? throw new ArgumentException("Received materials must match the dispatch guide.");
+            remaining.Remove(received);
+            reception.VerifyMaterial(item.MaterialId, received.ReceivedQuantity);
+        }
+        reception.SavePhysicalChecklist(input.Checklist.MaterialGoodCondition, input.Checklist.QuantityVerified,
+            input.Checklist.DeliveryGuideReceived, input.Checklist.ObservationsRecorded, input.Observations);
+        await unitOfWork.CompleteAsync(ct);
+        return reception;
+    }
+
+    public async Task<Reception?> CompareAsync(int id, PhysicalComparison input, string actorId, CancellationToken ct)
+    {
+        var reception = await FindAsync(id, ct);
+        if (reception is null) return null;
+        EnsureEditableBy(reception, actorId);
+        if (input.Items.Count != reception.Items.Count || input.Items.Select(i => i.Id).Distinct().Count() != input.Items.Count)
+            throw new ArgumentException("Verify every reception item exactly once.");
+        foreach (var item in input.Items)
+        {
+            var expected = reception.Items.SingleOrDefault(i => i.Id == item.Id)
+                ?? throw new ArgumentException("Item does not belong to this reception.");
+            reception.VerifyMaterial(expected.MaterialId, item.ReceivedQuantity);
+        }
+        await unitOfWork.CompleteAsync(ct);
+        return reception;
+    }
+
+    private static void EnsureEditableBy(Reception reception, string actorId)
+    {
+        if (!reception.IsPhysicalVerification || reception.VerifiedByUserId != actorId || reception.ClosedAt is not null)
+            throw new InvalidOperationException("Only the registering resident can edit an open physical reception.");
+    }
 
     public async Task<Reception?> VerifyAsync(int id, PhysicalVerification input, string actorId, CancellationToken ct)
     {
