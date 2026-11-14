@@ -10,6 +10,9 @@ using VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Repositories;
 using VigiaPlatform.API.FleetAndDeviceRegistry.Infrastructure.Persistence.EntityFrameworkCore.Repositories;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.HttpOverrides;
+using System.Net;
 using Scalar.AspNetCore;
 using VigiaPlatform.API.IdentityAndAccessManagement;
 using VigiaPlatform.API.ProjectManagement;
@@ -30,7 +33,22 @@ using VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Infrastructure.Persiste
 
 const string FrontendCorsPolicy = "VigiaFrontend";
 
-var builder = WebApplication.CreateBuilder(args);
+var migrateOnly = args.Contains("--migrate", StringComparer.Ordinal);
+var bootstrapAdmin = args.Contains("--bootstrap-admin", StringComparer.Ordinal);
+if (migrateOnly && bootstrapAdmin) throw new ArgumentException("Run migration and administrator provisioning separately.");
+var builder = WebApplication.CreateBuilder(args.Where(a => a is not ("--migrate" or "--bootstrap-admin")).ToArray());
+
+var keysPath = builder.Configuration["DataProtection:KeysPath"];
+if (!string.IsNullOrWhiteSpace(keysPath))
+    builder.Services.AddDataProtection().SetApplicationName("VigiaPlatform")
+        .PersistKeysToFileSystem(new DirectoryInfo(keysPath));
+
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    var proxy = builder.Configuration["ReverseProxy:KnownProxy"];
+    if (!string.IsNullOrWhiteSpace(proxy)) options.KnownProxies.Add(IPAddress.Parse(proxy));
+});
 
 builder.Services.AddControllers(options =>
     options.Conventions.Add(new KebabCaseRouteNamingConvention()));
@@ -97,11 +115,25 @@ builder.Services.AddScoped<IOrderQueryService, OrderQueryService>();
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
+if (migrateOnly || bootstrapAdmin)
+{
+    using var scope = app.Services.CreateScope();
+    if (migrateOnly)
+        await scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.MigrateAsync();
+    else
+        await VigiaPlatform.API.IdentityAndAccessManagement.Infrastructure.Operations.AdministratorProvisioning.RunAsync(
+            scope.ServiceProvider, builder.Configuration);
+    return;
+}
+
+if (app.Environment.IsDevelopment() || builder.Configuration.GetValue<bool>("OpenApi:Enabled"))
 {
     app.MapOpenApi();
     app.MapScalarApiReference();
+}
 
+if (app.Environment.IsDevelopment())
+{
     using var scope = app.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     if (builder.Configuration.GetValue<bool>("Development:SeedDemoData") &&
@@ -111,6 +143,7 @@ if (app.Environment.IsDevelopment())
     await VigiaPlatform.API.Shared.Infrastructure.Development.LocalIntegrationSeeder.SeedAsync(scope.ServiceProvider, builder.Configuration);
 }
 
+app.UseForwardedHeaders();
 app.UseExceptionHandler();
 app.UseHttpsRedirection();
 app.UseCors(FrontendCorsPolicy);
@@ -118,5 +151,18 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers().RequireAuthorization();
+app.MapGet("/health", async (AppDbContext db, CancellationToken ct) =>
+{
+    try
+    {
+        return await db.Database.CanConnectAsync(ct)
+            ? Results.Ok(new { status = "healthy" })
+            : Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
+    }
+    catch (Exception) when (!ct.IsCancellationRequested)
+    {
+        return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
+    }
+}).AllowAnonymous();
 
 app.Run();

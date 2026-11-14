@@ -1,0 +1,90 @@
+name: vigia
+
+x-api: &api
+  image: vigia-api:local
+  build:
+    context: ../..
+    dockerfile: Dockerfile
+  environment: &api-environment
+    ASPNETCORE_ENVIRONMENT: Production
+    ConnectionStrings__DefaultConnection: Server=mysql;Port=3306;Database=${MYSQL_DATABASE:-vigia};User=${MYSQL_USER:-vigia_app};Password=${MYSQL_PASSWORD:?Set MYSQL_PASSWORD};
+    DataProtection__KeysPath: /var/lib/vigia/keys
+    ReverseProxy__KnownProxy: 172.28.0.10
+    OpenApi__Enabled: ${OPENAPI_ENABLED:-true}
+  volumes:
+    - api_keys:/var/lib/vigia/keys
+  networks:
+    - internal
+  depends_on:
+    mysql:
+      condition: service_healthy
+
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-vigia}
+      MYSQL_USER: ${MYSQL_USER:-vigia_app}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - internal
+    healthcheck:
+      test: [CMD-SHELL, 'MYSQL_PWD="$$MYSQL_PASSWORD" mysql --host=127.0.0.1 --user="$$MYSQL_USER" --database="$$MYSQL_DATABASE" --execute="SELECT 1" >/dev/null']
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+
+  api:
+    <<: *api
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    environment:
+      API_DOMAIN: ${API_DOMAIN:?Set API_DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      internal:
+        ipv4_address: 172.28.0.10
+    depends_on:
+      - api
+
+  migrate:
+    <<: *api
+    profiles: [tools]
+    command: [--migrate]
+
+  bootstrap-admin:
+    <<: *api
+    profiles: [tools]
+    command: [--bootstrap-admin]
+    environment:
+      <<: *api-environment
+      BootstrapAdmin__Username: ${BOOTSTRAP_ADMIN_USERNAME:-vigia.admin}
+      BootstrapAdmin__FullName: ${BOOTSTRAP_ADMIN_FULL_NAME:-Vigia Administrator}
+      BootstrapAdmin__Password: ${BOOTSTRAP_ADMIN_PASSWORD:-}
+
+volumes:
+  mysql_data:
+  api_keys:
+  caddy_data:
+  caddy_config:
+
+networks:
+  internal:
+    ipam:
+      config:
+        - subnet: 172.28.0.0/24
