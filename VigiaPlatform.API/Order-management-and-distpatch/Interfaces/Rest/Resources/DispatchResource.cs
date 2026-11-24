@@ -19,4 +19,6 @@ public record DispatchResource(
     IReadOnlyList<DispatchItemResource> Items,
     IReadOnlyList<TimelineEventResource> Timeline,
     int? VehicleId,
-    string? VehiclePlate);
+    string? VehiclePlate,
+    DispatchWeighingResource? LatestWeighing = null,
+    bool RequiresWeightReview = true);

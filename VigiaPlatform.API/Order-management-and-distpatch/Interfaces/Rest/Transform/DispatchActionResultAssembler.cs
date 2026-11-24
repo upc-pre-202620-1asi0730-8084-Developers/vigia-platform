@@ -17,6 +17,7 @@ public static class DispatchActionResultAssembler
         DispatchError.DuplicateInternalReference => StatusCodes.Status409Conflict,
         DispatchError.InvalidStatusTransition => StatusCodes.Status409Conflict,
         DispatchError.DispatchNotEditable => StatusCodes.Status409Conflict,
+        DispatchError.ConcurrentModification => StatusCodes.Status409Conflict,
         DispatchError.OperationCancelled => StatusCodes.Status409Conflict,
         DispatchError.DatabaseError => StatusCodes.Status500InternalServerError,
         DispatchError.InternalServerError => StatusCodes.Status500InternalServerError,

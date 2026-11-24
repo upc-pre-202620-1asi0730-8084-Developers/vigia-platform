@@ -600,6 +600,11 @@ namespace VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCor
                         .HasColumnType("varchar(20)")
                         .HasColumnName("vehicle_plate");
 
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint")
+                        .HasColumnName("version");
+
                     b.HasKey("Id")
                         .HasName("pk_dispatches");
 
@@ -746,6 +751,83 @@ namespace VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCor
                         .HasDatabaseName("ix_dispatch_items_dispatch_id");
 
                     b.ToTable("dispatch_items", (string)null);
+                });
+
+            modelBuilder.Entity("VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.Entities.DispatchWeighing", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    b.Property<string>("CargoFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("cargo_fingerprint");
+
+                    b.Property<string>("ComparisonStatus")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("comparison_status");
+
+                    b.Property<int>("DispatchId")
+                        .HasColumnType("int")
+                        .HasColumnName("dispatch_id");
+
+                    b.Property<decimal?>("ExpectedWeightKg")
+                        .HasPrecision(12, 3)
+                        .HasColumnType("decimal(12,3)")
+                        .HasColumnName("expected_weight_kg");
+
+                    b.Property<string>("RecordedBy")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("varchar(150)")
+                        .HasColumnName("recorded_by");
+
+                    b.Property<int>("RecordedByAccountId")
+                        .HasColumnType("int")
+                        .HasColumnName("recorded_by_account_id");
+
+                    b.Property<string>("RequestId")
+                        .HasMaxLength(36)
+                        .HasColumnType("varchar(36)")
+                        .HasColumnName("request_id");
+
+                    b.Property<decimal?>("ToleranceKg")
+                        .HasPrecision(12, 3)
+                        .HasColumnType("decimal(12,3)")
+                        .HasColumnName("tolerance_kg");
+
+                    b.Property<int>("VehicleId")
+                        .HasColumnType("int")
+                        .HasColumnName("vehicle_id");
+
+                    b.Property<string>("VehiclePlate")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("vehicle_plate");
+
+                    b.Property<DateTime>("WeighedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("weighed_at");
+
+                    b.Property<decimal>("WeightKg")
+                        .HasPrecision(12, 3)
+                        .HasColumnType("decimal(12,3)")
+                        .HasColumnName("weight_kg");
+
+                    b.HasKey("Id")
+                        .HasName("pk_dispatch_weighings");
+
+                    b.HasIndex("DispatchId", "RequestId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_dispatch_weighings_dispatch_id_request_id");
+
+                    b.ToTable("dispatch_weighings", (string)null);
                 });
 
             modelBuilder.Entity("VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.Entities.OrderAttachedFile", b =>
@@ -1523,6 +1605,16 @@ namespace VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCor
                         .HasConstraintName("fk_dispatch_items_dispatches_dispatch_id");
                 });
 
+            modelBuilder.Entity("VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.Entities.DispatchWeighing", b =>
+                {
+                    b.HasOne("VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.Aggregates.Dispatch", null)
+                        .WithMany("Weighings")
+                        .HasForeignKey("DispatchId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_dispatch_weighings_dispatches_dispatch_id");
+                });
+
             modelBuilder.Entity("VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.Entities.OrderAttachedFile", b =>
                 {
                     b.HasOne("VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.Aggregates.Order", null)
@@ -1770,6 +1862,8 @@ namespace VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCor
                     b.Navigation("Items");
 
                     b.Navigation("Timeline");
+
+                    b.Navigation("Weighings");
                 });
 
             modelBuilder.Entity("VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.Aggregates.Order", b =>

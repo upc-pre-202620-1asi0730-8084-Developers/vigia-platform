@@ -14,6 +14,7 @@ public class DispatchRepository(AppDbContext context) : BaseRepository<Dispatch>
         Context.Set<Dispatch>()
             .Include(d => d.Items)
             .Include(d => d.Timeline)
+            .Include(d => d.Weighings)
             .AsSplitQuery();
 
     public override async Task<Dispatch?> FindByIdAsync(int id, CancellationToken cancellationToken = default)

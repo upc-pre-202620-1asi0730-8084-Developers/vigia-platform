@@ -25,7 +25,9 @@ public static class DispatchResourceFromEntityAssembler
             entity.Items.Select(ToResourceFromEntity).ToList(),
             entity.Timeline.Select(ToResourceFromEntity).ToList(),
             entity.VehicleId?.Value,
-            entity.VehiclePlate?.Value);
+            entity.VehiclePlate?.Value,
+            entity.LatestWeighing is null ? null : DispatchWeighingResourceAssembler.ToResource(entity, entity.LatestWeighing),
+            entity.RequiresWeightReview);
 
     public static DispatchItemResource ToResourceFromEntity(DispatchItem item) =>
         new(item.Id,
