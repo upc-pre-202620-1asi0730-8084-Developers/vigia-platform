@@ -29,10 +29,13 @@ public class DispatchPlanningService(AppDbContext db, IUnitOfWork unitOfWork)
         var order = await db.Set<Order>().Include(o => o.Items).SingleOrDefaultAsync(o => o.Id == orderId, ct)
             ?? throw new ArgumentException("Order does not exist.");
         if (order.Status != OrderStatusType.Approved) throw new InvalidOperationException("The order must be approved.");
-        var project = await db.Set<ConstructionProject>().SingleOrDefaultAsync(p => p.Name == input.ProjectName, ct)
-            ?? throw new ArgumentException("Select an existing project.");
-        if (!string.Equals(order.ProjectName.Value, project.Name, StringComparison.OrdinalIgnoreCase))
+        if (!string.Equals(order.ProjectName.Value, input.ProjectName?.Trim(), StringComparison.OrdinalIgnoreCase))
             throw new ArgumentException("The order belongs to a different project.");
+        var projectName = order.ProjectName.Value;
+        var matches = await db.Set<ConstructionProject>().Where(p => p.Name == projectName).Take(2).ToListAsync(ct);
+        if (matches.Count != 1)
+            throw new ArgumentException("The order must resolve to exactly one existing project; duplicate project names require review before dispatch planning.");
+        var project = matches[0];
         var resource = new CreateDispatchResource(project.Name, project.Id.ToString(), project.City,
             input.DepartureDate, input.EstimatedTime, order.Id.ToString(), input.DispatchType, input.Priority,
             actor, $"REF-{Guid.NewGuid():N}", input.Observations,

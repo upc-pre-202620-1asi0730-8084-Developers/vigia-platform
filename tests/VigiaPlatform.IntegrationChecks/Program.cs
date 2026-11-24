@@ -288,3 +288,25 @@ using(var stale=new AppDbContext(options))
     if(!failed)throw new Exception("Stale GPS vehicle position overwrote a committed report.");
 }
 Console.WriteLine("PASS: departure and GPS audit failures roll back all business changes; successful retry and stale-position concurrency protection verified.");
+// Integration boundary: a legacy name snapshot must never select an arbitrary project.
+using (var db = new AppDbContext(options))
+{
+    var name = "Ambiguous contract project";
+    db.Add(new VigiaPlatform.API.ProjectManagement.Domain.Model.ConstructionProject(name,"LIMA","Lima","1","First resident"));
+    db.Add(new VigiaPlatform.API.ProjectManagement.Domain.Model.ConstructionProject(name,"LIMA","Lima","2","Second resident"));
+    var order = new Order(new VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.Commands.CreateOrderCommand(
+        "SOL-990013",name,"Integration Check",
+        VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.ValueObjects.Order.Order.OrderPriorityType.Average,
+        DateOnly.FromDateTime(DateTime.UtcNow),"Cement",null,
+        [new("Cement",2,VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.ValueObjects.Order.Items.ItemsUnitType.u,null)],[]),DateTime.UtcNow);
+    order.ChangeStatus(VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.ValueObjects.Order.Order.OrderStatusType.UnderReview,"Integration Check",null,DateTime.UtcNow);
+    order.ChangeStatus(VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.ValueObjects.Order.Order.OrderStatusType.Approved,"Integration Check",null,DateTime.UtcNow);
+    db.Add(order);await db.SaveChangesAsync();
+    var before=await db.Set<Dispatch>().CountAsync();
+    var service=new VigiaPlatform.API.Order_management_and_distpatch.Infrastructure.Integration.DispatchPlanningService(db,new UnitOfWork(db,[]));
+    var rejected=false;
+    try {await service.PlanAsync(new(name,order.Id.ToString(),DateTime.UtcNow.ToString("yyyy-MM-dd"),"18:00","DEPARTURE_TO_WORK","AVERAGE",null),"Integration Check",default);}
+    catch(ArgumentException ex) when(ex.Message.Contains("exactly one")){rejected=true;}
+    if(!rejected || await db.Set<Dispatch>().CountAsync()!=before)throw new Exception("Ambiguous project planning selected a project or persisted a dispatch.");
+}
+Console.WriteLine("PASS: duplicate project names reject dispatch planning without a partial dispatch.");
