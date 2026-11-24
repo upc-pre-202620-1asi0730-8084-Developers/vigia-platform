@@ -9,6 +9,7 @@ public enum DispatchError
     InvalidDispatchData,
     InvalidStatusTransition,
     DispatchNotEditable,
+    ConcurrentModification,
     OperationCancelled,
     DatabaseError,
     InternalServerError

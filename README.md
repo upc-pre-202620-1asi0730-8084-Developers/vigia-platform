@@ -81,3 +81,26 @@ python scripts/verify-resident-orders.py --allow-local-writes
 ```
 
 The checks exercise assigned catalog access, spoofed identity fields, validation, isolation between accounts with equal display names, warehouse review and historical-order access. They create local-only fixtures and never contact Azure.
+
+## Dispatch net weighing (US-04 / TS-02)
+
+`POST /api/v1/dispatches/{dispatchId}/weighing` records net cargo weight in kg for an `IN_PREPARATION` dispatch with an assigned vehicle. `ADMIN` and `WAREHOUSE_MANAGER` can record and query measurements; residents cannot use these routes. The API returns `201` and a resource `Location`, `404` for an unknown dispatch, `400` for invalid values and `409` for an incompatible state, conflicting retry or concurrent modification. Scalar keeps these operations under **Dispatches**.
+
+```json
+{
+  "weightKg": 1000.125,
+  "expectedWeightKg": 1000,
+  "toleranceKg": 2,
+  "requestId": "17877d26-32e2-40bc-98e8-e7cd5cdbb6cf"
+}
+```
+
+The warehouse supplies the expected net weight and absolute tolerance in kg. The server compares `abs(weightKg - expectedWeightKg) <= toleranceKg`, including the boundary. It never infers kg from piece/unit counts, subtracts a vehicle's tare implicitly or invents a default tolerance. Measurements support up to three decimals and the storage range of `decimal(12,3)`; weights must be positive and tolerance may be zero. Supply both comparison fields or neither. A weight-only request is saved as `NOT_EVALUATED`, with review required, rather than classified as acceptable without evidence.
+
+`GET /api/v1/dispatches/{dispatchId}/weighing` returns the measurement history; appending `/{weighingId}` retrieves one record belonging to that dispatch. Records retain the authenticated operator, UTC time and vehicle/load snapshot. There is no edit/delete route for weighing history. An optional UUID `requestId` makes identical retries return the original resource without duplicate measurement, timeline or audit records. Reusing it with different values returns `409`.
+
+Dispatch resources now include `latestWeighing` and `requiresWeightReview`. Vehicle or material-line changes invalidate the old measurement for the current load while preserving its original comparison and history. A new valid weighing clears that weight review. Aggregate version checking rejects stale writes, and the weighing, dispatch timeline and activity audit are committed together. A review flag does not introduce another dispatch status or implement the future guide-authorization flow.
+
+Apply `AddDispatchNetWeighings` after `AddOrderRequesterAccount`, preserving the existing migration chain. Historical dispatches receive version zero and no fabricated measurements. The frontend weighing interface is a separate task; this change neither deploys Azure nor emits delivery guides.
+
+For isolated verification, start `scripts/start-local.ps1 -Database vigia_local_weighing_check -Port 5145`, then run `python scripts/verify-dispatch-weighing.py --allow-local-writes`. The HTTP checks cover precision, both sides of the tolerance boundary, missing comparison data, authentication, audit, load/vehicle changes, replay and simultaneous retries. The .NET integration checks also force a weighing audit failure and a stale concurrent write to verify transactional rollback.

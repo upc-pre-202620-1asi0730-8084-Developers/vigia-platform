@@ -69,6 +69,7 @@ public partial class Dispatch
         var item = new DispatchItem(command.Code, command.Material, command.Quantity, command.Unit,
             command.Observation);
         _items.Add(item);
+        Version++;
 
         AddTimelineEvent("Item added", command.PerformedBy,
             $"Item {item.Code.Value} ({item.Material.Value}) added to the dispatch.", occurredAt);
@@ -85,6 +86,7 @@ public partial class Dispatch
             throw new InvalidOperationException("A dispatch must contain at least one item.");
 
         _items.Remove(item);
+        Version++;
 
         AddTimelineEvent("Item removed", performedBy,
             $"Item {item.Code.Value} ({item.Material.Value}) removed from the dispatch.", occurredAt);
@@ -100,6 +102,7 @@ public partial class Dispatch
         var plate = new VehiclePlate(vehiclePlate);
         VehicleId = new VehicleId(vehicleId);
         VehiclePlate = plate;
+        Version++;
 
         AddTimelineEvent("Vehicle assigned", performedBy, $"Vehicle {plate.Value} assigned to the dispatch.",
             occurredAt);
@@ -118,6 +121,7 @@ public partial class Dispatch
             throw new InvalidOperationException("A vehicle must be assigned before the dispatch leaves.");
 
         Status = newStatus;
+        Version++;
 
         AddTimelineEvent(StatusEventName(newStatus), performedBy,
             string.IsNullOrWhiteSpace(description) ? StatusEventDescription(newStatus) : description,
@@ -132,6 +136,7 @@ public partial class Dispatch
             throw new InvalidOperationException($"A dispatch with status {Status} cannot be cancelled.");
 
         Status = DispatchStatus.Cancelled;
+        Version++;
 
         AddTimelineEvent("Dispatch cancelled", performedBy, reason, occurredAt);
     }

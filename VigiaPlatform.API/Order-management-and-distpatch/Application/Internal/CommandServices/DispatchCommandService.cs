@@ -135,6 +135,10 @@ public class DispatchCommandService(
         {
             return Failure(DispatchError.OperationCancelled);
         }
+        catch (DbUpdateConcurrencyException)
+        {
+            return Failure(DispatchError.ConcurrentModification);
+        }
         catch (DbUpdateException)
         {
             return Failure(DispatchError.DatabaseError);

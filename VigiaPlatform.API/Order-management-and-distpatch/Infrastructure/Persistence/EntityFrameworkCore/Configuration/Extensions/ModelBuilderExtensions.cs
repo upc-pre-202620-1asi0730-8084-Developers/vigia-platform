@@ -87,6 +87,11 @@ public static class ModelBuilderExtensions
 
         dispatch.Property(d => d.CreatedAt);
         dispatch.Property(d => d.UpdatedAt);
+        dispatch.Property(d => d.Version).IsConcurrencyToken();
+        dispatch.Ignore(d => d.LatestWeighing);
+        dispatch.Ignore(d => d.RequiresWeightReview);
+        dispatch.HasMany(d => d.Weighings).WithOne().HasForeignKey(w => w.DispatchId).OnDelete(DeleteBehavior.Cascade);
+        dispatch.Navigation(d => d.Weighings).UsePropertyAccessMode(PropertyAccessMode.Field);
 
         dispatch.HasIndex(d => d.InternalReference).IsUnique();
         dispatch.HasIndex(d => d.Status);

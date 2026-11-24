@@ -10,6 +10,10 @@ using VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCore.Re
 using VigiaPlatform.API.SiteReceptionAndVerification.Domain.Model.Aggregates;
 using VigiaPlatform.API.TransitTraceability.Domain.Model.Aggregates;
 using VigiaPlatform.API.TransitTraceability.Domain.Model.ValueObjects;
+using VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.Aggregates;
+using VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.ValueObjects.Distpatch.Dispatch;
+using VigiaPlatform.API.Order_management_and_distpatch.Interfaces.Rest.Resources;
+using VigiaPlatform.API.Order_management_and_distpatch.Interfaces.Rest.Transform;
 
 if (args.Length != 1) throw new ArgumentException("Pass the path to the private local appsettings.Development.json file.");
 using var config = JsonDocument.Parse(await File.ReadAllTextAsync(args[0]));
@@ -56,6 +60,63 @@ using (var db = new AppDbContext(options))
     await new UnitOfWork(db, [new ActivityChangeRecorder(db, accessor)]).CompleteAsync();
     if (await db.Set<ActivityRecord>().CountAsync() != before + 1) throw new Exception("Child-only telemetry changes were not audited.");
 }
+int weighingDispatchId;
+long preparationVersion;
+using (var db = new AppDbContext(options))
+{
+    var dispatch = new Dispatch(CreateDispatchCommandFromResourceAssembler.ToCommandFromResource(
+        new CreateDispatchResource("Weighing Check", "site-check", "Lima", DateTime.UtcNow.ToString("yyyy-MM-dd"),
+            "18:00", "1", "DEPARTURE_TO_WORK", "AVERAGE", "Integration Check", "WEIGH-" + Guid.NewGuid().ToString("N"),
+            null, [new CreateDispatchItemResource("MAT-0001", "Cement", 2, "u", null)])), DateTime.UtcNow);
+    dispatch.ChangeStatus(DispatchStatus.InPreparation, "Integration Check", null, DateTime.UtcNow);
+    dispatch.AssignVehicle(1, "ABC-123", "Integration Check", DateTime.UtcNow);
+    db.Add(dispatch);
+    await new UnitOfWork(db, [new ActivityChangeRecorder(db, accessor)]).CompleteAsync();
+    weighingDispatchId = dispatch.Id;
+    preparationVersion = dispatch.Version;
+}
+using (var db = new AppDbContext(options))
+{
+    var dispatch = await db.Set<Dispatch>().Include(d => d.Items).Include(d => d.Timeline).Include(d => d.Weighings)
+        .SingleAsync(d => d.Id == weighingDispatchId);
+    await db.Database.ExecuteSqlRawAsync("CREATE TRIGGER fail_weighing_audit BEFORE INSERT ON activity_records FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'intentional weighing audit failure'");
+    dispatch.RecordNetWeight(100m, 100m, 2m, 1, "Integration Check", DateTimeOffset.UtcNow, Guid.NewGuid());
+    var failed = false;
+    try { await new UnitOfWork(db, [new ActivityChangeRecorder(db, accessor)]).CompleteAsync(); }
+    catch (DbUpdateException) { failed = true; }
+    finally { await db.Database.ExecuteSqlRawAsync("DROP TRIGGER fail_weighing_audit"); }
+    if (!failed) throw new Exception("Forced weighing audit failure unexpectedly succeeded.");
+}
+using (var db = new AppDbContext(options))
+{
+    var dispatch = await db.Set<Dispatch>().Include(d => d.Timeline).Include(d => d.Weighings)
+        .SingleAsync(d => d.Id == weighingDispatchId);
+    if (dispatch.Weighings.Count != 0 || dispatch.Timeline.Count != 3 || dispatch.Version != preparationVersion)
+        throw new Exception("Failed weighing left a measurement, timeline event or version change committed.");
+}
+using (var firstDb = new AppDbContext(options))
+using (var staleDb = new AppDbContext(options))
+{
+    var first = await firstDb.Set<Dispatch>().Include(d => d.Items).Include(d => d.Timeline).Include(d => d.Weighings)
+        .SingleAsync(d => d.Id == weighingDispatchId);
+    var stale = await staleDb.Set<Dispatch>().Include(d => d.Items).Include(d => d.Timeline).Include(d => d.Weighings)
+        .SingleAsync(d => d.Id == weighingDispatchId);
+    first.RecordNetWeight(100m, 100m, 2m, 1, "Integration Check", DateTimeOffset.UtcNow, Guid.NewGuid());
+    await new UnitOfWork(firstDb, [new ActivityChangeRecorder(firstDb, accessor)]).CompleteAsync();
+    stale.RecordNetWeight(103m, 100m, 2m, 1, "Integration Check", DateTimeOffset.UtcNow, Guid.NewGuid());
+    var rejected = false;
+    try { await new UnitOfWork(staleDb, [new ActivityChangeRecorder(staleDb, accessor)]).CompleteAsync(); }
+    catch (DbUpdateConcurrencyException) { rejected = true; }
+    if (!rejected) throw new Exception("A stale weighing update was not rejected.");
+}
+using (var db = new AppDbContext(options))
+{
+    var dispatch = await db.Set<Dispatch>().Include(d => d.Items).Include(d => d.Timeline).Include(d => d.Weighings)
+        .SingleAsync(d => d.Id == weighingDispatchId);
+    if (dispatch.Weighings.Count != 1 || dispatch.Timeline.Count != 4 || dispatch.LatestWeighing!.WeightKg != 100m ||
+        dispatch.RequiresWeightReview || dispatch.Version != preparationVersion + 1)
+        throw new Exception("Stale weighing update left partial records or replaced the accepted measurement.");
+}
 var legacyConnection = new MySqlConnectionStringBuilder(connection.ConnectionString) { Database = connection.Database + "_legacy" };
 using (var legacy = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>().UseMySQL(legacyConnection.ConnectionString).Options))
 {
@@ -75,4 +136,4 @@ using (var legacy = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>()
         await legacy.Set<VigiaPlatform.API.ProjectManagement.Domain.Model.ConstructionProject>().CountAsync() != 1)
         throw new Exception("The legacy-schema guard failed to preserve the existing schema and data.");
 }
-Console.WriteLine($"PASS: complete migration chain, real MySQL rollback, atomic success, telemetry history and rejection of an isolated EnsureCreated schema without altering its records. Database: {connection.Database}");
+Console.WriteLine($"PASS: complete migration chain, real MySQL rollback, atomic success, weighing audit rollback and stale-write rejection, telemetry history and rejection of an isolated EnsureCreated schema without altering its records. Database: {connection.Database}");
