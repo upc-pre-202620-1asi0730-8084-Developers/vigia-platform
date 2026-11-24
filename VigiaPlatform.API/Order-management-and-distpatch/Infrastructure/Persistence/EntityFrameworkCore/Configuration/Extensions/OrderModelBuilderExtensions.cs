@@ -62,6 +62,7 @@ public static class OrderModelBuilderExtensions
 
         order.HasIndex(o => o.Code).IsUnique();
         order.HasIndex(o => o.Status);
+        order.HasIndex(o => o.RequesterAccountId);
 
         order.HasMany(o => o.Items)
             .WithOne()

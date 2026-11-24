@@ -29,6 +29,10 @@ public class OrderRepository(AppDbContext context) : BaseRepository<Order>(conte
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IEnumerable<Order>> FindByRequesterAsync(int accountId, CancellationToken cancellationToken = default) =>
+        await OrdersWithDetails.Where(o => o.RequesterAccountId == accountId).OrderByDescending(o => o.Id)
+            .ToListAsync(cancellationToken);
+
     public async Task<IEnumerable<Order>> FindByStatusAsync(OrderStatusType status,
         CancellationToken cancellationToken = default)
     {
