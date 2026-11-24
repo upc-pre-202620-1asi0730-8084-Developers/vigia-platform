@@ -9,6 +9,27 @@ using VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCore.Co
 
 public class EvidenceAccess(AppDbContext db)
 {
+    public async Task<bool> ProjectAsync(int siteId, ClaimsPrincipal user, CancellationToken ct)
+    {
+        if (user.IsInRole("ADMIN"))
+            return await db.Set<ConstructionProject>().AnyAsync(p => p.Id == siteId, ct);
+        var accountId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+        return user.IsInRole("SITE_MANAGER") && accountId is not null &&
+            await db.Set<ConstructionProject>().AnyAsync(p => p.Id == siteId && p.ManagerId == accountId, ct);
+    }
+
+    public async Task<HashSet<int>?> AccessibleProjectIdsAsync(ClaimsPrincipal user, CancellationToken ct)
+    {
+        if (user.IsInRole("ADMIN")) return null;
+        var accountId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!user.IsInRole("SITE_MANAGER") || string.IsNullOrWhiteSpace(accountId))
+            return [];
+        return (await db.Set<ConstructionProject>()
+            .Where(p => p.ManagerId == accountId)
+            .Select(p => p.Id)
+            .ToListAsync(ct)).ToHashSet();
+    }
+
     public async Task<bool> ReceptionAsync(int id, ClaimsPrincipal user, CancellationToken ct)
     {
         var receipt = await db.Set<Reception>().AsNoTracking().Where(r=>r.Id==id)

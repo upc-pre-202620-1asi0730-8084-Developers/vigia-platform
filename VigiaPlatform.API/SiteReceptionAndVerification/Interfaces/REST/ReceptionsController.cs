@@ -2,11 +2,17 @@ namespace VigiaPlatform.API.SiteReceptionAndVerification.Interfaces.REST;
 
 using System.Net.Mime;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Infrastructure.Evidence;
+using VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.Aggregates;
+using VigiaPlatform.API.Shared.Domain.Repositories;
+using VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCore.Configuration;
 using VigiaPlatform.API.SiteReceptionAndVerification.Application.Internal.Commands;
 using VigiaPlatform.API.SiteReceptionAndVerification.Application.Internal.CommandServices;
 using VigiaPlatform.API.SiteReceptionAndVerification.Application.Internal.Queries;
 using VigiaPlatform.API.SiteReceptionAndVerification.Application.Internal.QueryServices;
 using VigiaPlatform.API.SiteReceptionAndVerification.Domain.Exceptions;
+using VigiaPlatform.API.SiteReceptionAndVerification.Infrastructure.Integration;
 using VigiaPlatform.API.SiteReceptionAndVerification.Interfaces.REST.Resources;
 using VigiaPlatform.API.SiteReceptionAndVerification.Interfaces.REST.Transform;
 
@@ -21,7 +27,10 @@ using VigiaPlatform.API.SiteReceptionAndVerification.Interfaces.REST.Transform;
 public class ReceptionsController(
     IReceptionCommandService receptionCommandService,
     IReceptionQueryService receptionQueryService,
-    VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Infrastructure.Evidence.EvidenceAccess evidenceAccess
+    EvidenceAccess evidenceAccess,
+    PhysicalReceptionService physicalReceptionService,
+    AppDbContext db,
+    IUnitOfWork unitOfWork
 ) : ControllerBase
 {
     /// <summary>
@@ -33,6 +42,16 @@ public class ReceptionsController(
     [ProducesResponseType(typeof(ErrorResource), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> RecordUnitArrival([FromBody] RecordUnitArrivalResource resource, CancellationToken cancellationToken)
     {
+        if (!await evidenceAccess.ProjectAsync(resource.SiteId, User, cancellationToken))
+            return Forbid();
+
+        if (int.TryParse(resource.DispatchId?.Replace("DS-", "", StringComparison.OrdinalIgnoreCase), out var dispatchId))
+        {
+            var dispatch = await db.Set<Dispatch>().AsNoTracking().SingleOrDefaultAsync(d => d.Id == dispatchId, cancellationToken);
+            if (dispatch is not null && dispatch.SiteId.Value != resource.SiteId.ToString())
+                return BadRequest(new ErrorResource(SiteReceptionErrorCodes.InvalidArrival, "Dispatch does not belong to the specified site."));
+        }
+
         try
         {
             var command = ReceptionAssembler.ToCommandFromResource(resource);
@@ -56,7 +75,10 @@ public class ReceptionsController(
     [ProducesResponseType(typeof(IEnumerable<ReceptionResource>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetUpcomingArrivals(CancellationToken cancellationToken)
     {
+        var allowedSites = await evidenceAccess.AccessibleProjectIdsAsync(User, cancellationToken);
         var result = await receptionQueryService.Handle(new GetUpcomingArrivalsQuery(), cancellationToken);
+        if (allowedSites is not null)
+            result = result.Where(r => allowedSites.Contains(r.SiteId));
         var response = result.Select(ReceptionAssembler.ToResourceFromEntity);
         return Ok(response);
     }
@@ -68,9 +90,16 @@ public class ReceptionsController(
     [ProducesResponseType(typeof(IEnumerable<ReceptionResource>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll([FromQuery] int? siteId, CancellationToken cancellationToken)
     {
+        if (siteId.HasValue && !await evidenceAccess.ProjectAsync(siteId.Value, User, cancellationToken))
+            return Forbid();
+
         var result = siteId.HasValue
             ? await receptionQueryService.Handle(new GetReceptionsBySiteIdQuery(siteId.Value), cancellationToken)
             : await receptionQueryService.Handle(new GetAllReceptionsQuery(), cancellationToken);
+
+        var allowedSites = await evidenceAccess.AccessibleProjectIdsAsync(User, cancellationToken);
+        if (allowedSites is not null)
+            result = result.Where(r => allowedSites.Contains(r.SiteId));
 
         var response = result.Select(ReceptionAssembler.ToResourceFromEntity);
         return Ok(response);
@@ -84,6 +113,9 @@ public class ReceptionsController(
     [ProducesResponseType(typeof(ErrorResource), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(int id, CancellationToken cancellationToken)
     {
+        if (!await evidenceAccess.ReceptionAsync(id, User, cancellationToken))
+            return NotFound(new ErrorResource(SiteReceptionErrorCodes.ReceptionNotFound, $"Reception {id} not found."));
+
         var result = await receptionQueryService.Handle(new GetReceptionByIdQuery(id), cancellationToken);
         if (result is null)
             return NotFound(new ErrorResource(SiteReceptionErrorCodes.ReceptionNotFound, $"Reception {id} not found."));
@@ -100,7 +132,7 @@ public class ReceptionsController(
     public async Task<IActionResult> GetByDispatchId(string dispatchId, CancellationToken cancellationToken)
     {
         var result = await receptionQueryService.Handle(new GetReceptionByDispatchIdQuery(dispatchId), cancellationToken);
-        if (result is null)
+        if (result is null || !await evidenceAccess.ReceptionAsync(result.Id, User, cancellationToken))
             return NotFound(new ErrorResource(SiteReceptionErrorCodes.ReceptionNotFound, $"Reception for dispatch '{dispatchId}' not found."));
 
         return Ok(ReceptionAssembler.ToResourceFromEntity(result));
@@ -115,6 +147,25 @@ public class ReceptionsController(
     [ProducesResponseType(typeof(ErrorResource), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ConfirmReceipt(int id, [FromBody] ConfirmReceiptResource resource, CancellationToken cancellationToken)
     {
+        if (!await evidenceAccess.ReceptionAsync(id, User, cancellationToken))
+            return NotFound(new ErrorResource(SiteReceptionErrorCodes.ReceptionNotFound, $"Reception {id} not found."));
+
+        var existing = await receptionQueryService.Handle(new GetReceptionByIdQuery(id), cancellationToken);
+        if (existing is null)
+            return NotFound(new ErrorResource(SiteReceptionErrorCodes.ReceptionNotFound, $"Reception {id} not found."));
+
+        if (int.TryParse(existing.DispatchId?.Replace("DS-", "", StringComparison.OrdinalIgnoreCase), out var dispatchId))
+        {
+            var dispatch = await db.Set<Dispatch>().Include(d => d.DeliveryGuide).AsNoTracking()
+                .SingleOrDefaultAsync(d => d.Id == dispatchId, cancellationToken);
+            if (dispatch?.DeliveryGuide is not null &&
+                !string.Equals(resource.DeliveryNoteNumber?.Trim(), dispatch.DeliveryGuide.GuideNumber, StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest(new ErrorResource(SiteReceptionErrorCodes.InvalidArrival,
+                    "Delivery note number does not match the dispatch delivery guide."));
+            }
+        }
+
         try
         {
             var command = ReceptionAssembler.ToCommandFromResource(id, resource);
@@ -139,6 +190,9 @@ public class ReceptionsController(
     [ProducesResponseType(typeof(ErrorResource), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> VerifyMaterial(int id, [FromBody] VerifyMaterialResource resource, CancellationToken cancellationToken)
     {
+        if (!await evidenceAccess.ReceptionAsync(id, User, cancellationToken))
+            return NotFound(new ErrorResource(SiteReceptionErrorCodes.ReceptionNotFound, $"Reception {id} not found."));
+
         try
         {
             var command = new VerifyReceivedMaterialCommand(id, resource.MaterialId, resource.ReceivedQuantity, resource.Comments);
@@ -163,12 +217,23 @@ public class ReceptionsController(
     [ProducesResponseType(typeof(ErrorResource), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> RecordConformity(int id, [FromBody] RecordConformityResource resource, CancellationToken cancellationToken)
     {
+        if (!await evidenceAccess.ReceptionAsync(id, User, cancellationToken))
+            return NotFound(new ErrorResource(SiteReceptionErrorCodes.ReceptionNotFound, $"Reception {id} not found."));
+
         try
         {
+            await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
             var command = new RecordConformityCommand(id, resource.ComplianceNotes);
             var result = await receptionCommandService.Handle(command, cancellationToken);
             if (result is null)
                 return NotFound(new ErrorResource(SiteReceptionErrorCodes.ReceptionNotFound, $"Reception {id} not found."));
+
+            await physicalReceptionService.CloseConformantDispatchAsync(
+                result,
+                User.Identity?.Name ?? result.SiteResidentName,
+                cancellationToken);
+            await unitOfWork.CompleteAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
 
             return Ok(ReceptionAssembler.ToResourceFromEntity(result));
         }
@@ -188,6 +253,9 @@ public class ReceptionsController(
     [ProducesResponseType(typeof(ErrorResource), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> ReportDiscrepancy(int id, [FromBody] ReportDiscrepancyResource resource, CancellationToken cancellationToken)
     {
+        if (!await evidenceAccess.ReceptionAsync(id, User, cancellationToken))
+            return NotFound(new ErrorResource(SiteReceptionErrorCodes.ReceptionNotFound, $"Reception {id} not found."));
+
         try
         {
             var command = new ReportDiscrepancyCommand(id, resource.Reason, resource.Description, resource.Severity);

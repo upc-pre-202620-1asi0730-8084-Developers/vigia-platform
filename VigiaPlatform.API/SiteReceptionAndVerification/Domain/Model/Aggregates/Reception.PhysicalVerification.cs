@@ -10,6 +10,20 @@ public partial class Reception
     public bool QuantityVerified { get; private set; }
     public bool DeliveryGuideReceived { get; private set; }
     public bool ObservationsRecorded { get; private set; }
+    public string? RegisterRequestId { get; private set; }
+    public string? VerifyRequestId { get; private set; }
+
+    public void RecordRegisterRequestId(Guid? requestId)
+    {
+        if (requestId == Guid.Empty) throw new ArgumentException("The request ID cannot be empty.");
+        if (requestId.HasValue) RegisterRequestId = requestId.Value.ToString("D");
+    }
+
+    public void RecordVerifyRequestId(Guid? requestId)
+    {
+        if (requestId == Guid.Empty) throw new ArgumentException("The request ID cannot be empty.");
+        if (requestId.HasValue) VerifyRequestId = requestId.Value.ToString("D");
+    }
 
     public void BeginPhysicalVerification(string guide, string actorId, string actorName)
     {
@@ -24,6 +38,7 @@ public partial class Reception
         SiteResidentName = actorName;
         IsPhysicalVerification = true;
         Status = ReceptionStatus.ReceiptConfirmed;
+        Version++;
     }
 
     public void CompletePhysicalVerification(bool goodCondition, bool quantityVerified, bool guideReceived,
@@ -38,7 +53,7 @@ public partial class Reception
         QuantityVerified = quantityVerified;
         DeliveryGuideReceived = guideReceived;
         ObservationsRecorded = observationsRecorded;
-        ReceiverNotes = observations;
+        ReceiverNotes = string.IsNullOrWhiteSpace(observations) ? null : observations.Trim();
         if (reportDiscrepancy || !goodCondition || _items.Any(i => i.HasDiscrepancy))
         {
             ReportDiscrepancy("PHYSICAL_VERIFICATION", string.IsNullOrWhiteSpace(observations) ? "Material quantity or condition differs from the dispatch guide." : observations);
@@ -55,6 +70,7 @@ public partial class Reception
         QuantityVerified = quantityVerified;
         DeliveryGuideReceived = guideReceived;
         ObservationsRecorded = observationsRecorded;
-        ReceiverNotes = observations;
+        ReceiverNotes = string.IsNullOrWhiteSpace(observations) ? null : observations.Trim();
+        Version++;
     }
 }

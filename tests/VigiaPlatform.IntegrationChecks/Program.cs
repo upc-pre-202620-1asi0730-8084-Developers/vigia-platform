@@ -37,6 +37,27 @@ fleetVehicle.PairGpsDevice("GPS-2");
 if (fleetVehicle.CurrentPos is not null) throw new Exception("Replacement GPS inherited the old position."); fleetChecks++;
 Console.WriteLine($"PASS: {fleetChecks} fleet domain checks.");
 
+var a01DomainChecks = 0;
+var a01DomainReception = new Reception("10", "A01-123", "Driver One", 1, "Site A", "Resident One");
+a01DomainReception.BeginPhysicalVerification("GD-00000010", "101", "Resident One");
+a01DomainReception.RecordRegisterRequestId(Guid.Parse("11111111-1111-1111-1111-111111111111"));
+a01DomainReception.AddItem("1", "Cement", "u", 5);
+a01DomainReception.VerifyMaterial("1", 5);
+var versionBeforeVerify = a01DomainReception.Version;
+a01DomainReception.RecordVerifyRequestId(Guid.Parse("22222222-2222-2222-2222-222222222222"));
+a01DomainReception.CompletePhysicalVerification(true, true, true, false, null, false);
+if (a01DomainReception.Status != VigiaPlatform.API.SiteReceptionAndVerification.Domain.Model.ValueObjects.ReceptionStatus.ConformantClosed ||
+    a01DomainReception.Version <= versionBeforeVerify ||
+    a01DomainReception.VerifyRequestId != "22222222-2222-2222-2222-222222222222")
+    throw new Exception("A01 domain conformant closure or concurrency version failed.");
+a01DomainChecks++;
+var emptyGuidRejected = false;
+try { a01DomainReception.RecordVerifyRequestId(Guid.Empty); } catch (ArgumentException) { emptyGuidRejected = true; }
+if (!emptyGuidRejected) throw new Exception("Empty verify request ID was accepted.");
+a01DomainChecks++;
+Console.WriteLine($"PASS: {a01DomainChecks} A01 reception domain checks.");
+
+if (args.Length == 1 && args[0] == "--domain-only") return;
 if (args.Length != 1) throw new ArgumentException("Pass the path to the private local appsettings.Development.json file.");
 using var config = JsonDocument.Parse(await File.ReadAllTextAsync(args[0]));
 var connection = new MySqlConnectionStringBuilder(config.RootElement.GetProperty("ConnectionStrings").GetProperty("DefaultConnection").GetString());
@@ -344,3 +365,155 @@ using(var db=new AppDbContext(options))
  if(!photo.Content.SequenceEqual(photoBytes)||photo.EvidenceId<=0)throw new Exception("Stored photo retry did not persist complete bytes and linkage.");
 }
 Console.WriteLine("PASS: photo audit failure rolls back both stored bytes and receipt evidence; exact request retry commits complete linkage.");
+
+// A01 checks: project authorization, authoritative delivery guide, atomic/idempotent closure, concurrency and vehicle release.
+int a01SiteId;
+int a01DispatchId;
+string a01GuideNumber;
+string a01AssignedResidentId = "101";
+string a01OutsiderResidentId = "202";
+VigiaPlatform.API.SiteReceptionAndVerification.Infrastructure.Integration.PhysicalReceptionService ReceptionSvc(AppDbContext db) =>
+    new(db, new UnitOfWork(db, [new ActivityChangeRecorder(db, accessor)]));
+ClaimsPrincipal MakeResident(string id, string name) => new(new ClaimsIdentity(
+    [new Claim(ClaimTypes.NameIdentifier, id), new Claim(ClaimTypes.Role, "SITE_MANAGER"), new Claim(ClaimTypes.Name, name)], "local-check"));
+
+using (var db = new AppDbContext(options))
+{
+    var project = new VigiaPlatform.API.ProjectManagement.Domain.Model.ConstructionProject("A01 Reception Site", "LIMA", "Lima", a01AssignedResidentId, "Assigned Resident");
+    db.Add(project);
+    await db.SaveChangesAsync();
+    a01SiteId = project.Id;
+
+    var order = new Order(new VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.Commands.CreateOrderCommand(
+        "SOL-990014", project.Name, "Assigned Resident",
+        VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.ValueObjects.Order.Order.OrderPriorityType.Average,
+        DateOnly.FromDateTime(DateTime.UtcNow), "Cement", null,
+        [new("Cement", 5, VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.ValueObjects.Order.Items.ItemsUnitType.u, null)], []), DateTime.UtcNow);
+    order.ChangeStatus(VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.ValueObjects.Order.Order.OrderStatusType.UnderReview, "Warehouse", null, DateTime.UtcNow);
+    order.ChangeStatus(VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.ValueObjects.Order.Order.OrderStatusType.Approved, "Warehouse", null, DateTime.UtcNow);
+    db.Add(order);
+    await db.SaveChangesAsync();
+
+    var vehicle = new VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Model.Aggregates.Vehicle("a01-co",
+        new VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Model.ValueObjects.LicensePlate("A01-999"), "Volvo", "FMX",
+        new VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Model.ValueObjects.VehicleCapacity(10), "GPS-A01-1");
+    var origin = new VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Model.Aggregates.Geofence("a01-co", "a01-wh", "A01 Warehouse",
+        VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Model.ValueObjects.GeofenceType.Warehouse, fleetLocation, 150);
+    var dest = new VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Model.Aggregates.Geofence("a01-co", a01SiteId.ToString(), "A01 Dest",
+        VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Model.ValueObjects.GeofenceType.JobSite, new(-12.13, -76.98), 150);
+    db.AddRange(vehicle, origin, dest);
+    await db.SaveChangesAsync();
+
+    var dispatch = new Dispatch(CreateDispatchCommandFromResourceAssembler.ToCommandFromResource(
+        new CreateDispatchResource(project.Name, a01SiteId.ToString(), "Lima", DateTime.UtcNow.ToString("yyyy-MM-dd"),
+            "18:00", order.Id.ToString(), "DEPARTURE_TO_WORK", "AVERAGE", "Warehouse", "A01-" + Guid.NewGuid().ToString("N"),
+            null, [new CreateDispatchItemResource("MAT-A01", "Cement", 5, "u", null)])), DateTime.UtcNow);
+    dispatch.ChangeStatus(DispatchStatus.InPreparation, "Warehouse", null, DateTime.UtcNow);
+    dispatch.AssignVehicle(vehicle.Id, vehicle.LicensePlate.Value, "Warehouse", DateTime.UtcNow);
+    db.Add(dispatch);
+    await db.SaveChangesAsync();
+    dispatch.RecordNetWeight(100m, 100m, 2m, 1, "Warehouse", DateTimeOffset.UtcNow, Guid.NewGuid());
+    await db.SaveChangesAsync();
+    dispatch.IssueDeliveryGuide("A01 Driver", "A01 Carrier", 1, "Warehouse", DateTimeOffset.UtcNow, Guid.NewGuid());
+    await db.SaveChangesAsync();
+
+    a01DispatchId = dispatch.Id;
+    a01GuideNumber = dispatch.DeliveryGuide!.GuideNumber;
+
+    await TripService(db).DepartAsync(a01DispatchId, new(origin.Id, DateTimeOffset.UtcNow.AddHours(1),
+        [new(-12.07, -77.03), new(-12.13, -76.98)], Guid.NewGuid()), "Warehouse", "a01-co", default);
+}
+
+var assignedUser = MakeResident(a01AssignedResidentId, "Assigned Resident");
+var outsiderUser = MakeResident(a01OutsiderResidentId, "Outsider Resident");
+var a01Checklist = new VigiaPlatform.API.SiteReceptionAndVerification.Infrastructure.Integration.PhysicalChecklist(true, true, true, false, false);
+var a01RegReq = Guid.NewGuid();
+int a01ReceptionId;
+
+using (var db = new AppDbContext(options))
+{
+    var svc = ReceptionSvc(db);
+    var unauthorized = false;
+    try
+    {
+        await svc.RegisterAsync(new(a01DispatchId.ToString(), a01GuideNumber, "A01 Driver",
+            [new("Cement", 5)], a01Checklist, "", Guid.NewGuid()), outsiderUser, default);
+    }
+    catch (UnauthorizedAccessException) { unauthorized = true; }
+    if (!unauthorized) throw new Exception("Unassigned resident was allowed to register another project reception.");
+
+    var wrongGuide = false;
+    try
+    {
+        await svc.RegisterAsync(new(a01DispatchId.ToString(), "GD-FORGED-999", "A01 Driver",
+            [new("Cement", 5)], a01Checklist, "", Guid.NewGuid()), assignedUser, default);
+    }
+    catch (ArgumentException) { wrongGuide = true; }
+    if (!wrongGuide) throw new Exception("Reception accepted an invalid delivery guide number.");
+
+    var regPayload = new VigiaPlatform.API.SiteReceptionAndVerification.Infrastructure.Integration.PhysicalArrival(
+        a01DispatchId.ToString(), a01GuideNumber, "A01 Driver", [new("Cement", 5)], a01Checklist, "", a01RegReq);
+    var (created, replayed1) = await svc.RegisterAsync(regPayload, assignedUser, default);
+    if (replayed1) throw new Exception("Initial registration unexpectedly reported replay.");
+    a01ReceptionId = created.Id;
+    var (replayedRec, replayed2) = await svc.RegisterAsync(regPayload, assignedUser, default);
+    if (!replayed2 || replayedRec.Id != a01ReceptionId) throw new Exception("Idempotent registration replay failed.");
+}
+
+using (var db = new AppDbContext(options))
+{
+    var svc = ReceptionSvc(db);
+    if (await svc.UpdateAsync(a01ReceptionId, new(a01DispatchId.ToString(), a01GuideNumber, "A01 Driver", [new("Cement", 5)], a01Checklist, ""), outsiderUser, default) is not null)
+        throw new Exception("Unassigned resident could update another project reception.");
+    if (await svc.VerifyAsync(a01ReceptionId, new("VERIFIED_CONFORMANT", a01Checklist, "", Guid.NewGuid()), outsiderUser, default) is not null)
+        throw new Exception("Unassigned resident could verify another project reception.");
+}
+
+var verifyReq = Guid.NewGuid();
+using (var db = new AppDbContext(options))
+{
+    var svc = ReceptionSvc(db);
+    await db.Database.ExecuteSqlRawAsync("CREATE TRIGGER fail_a01_verify BEFORE INSERT ON activity_records FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'intentional a01 verify failure'");
+    var failed = false;
+    try { await svc.VerifyAsync(a01ReceptionId, new("VERIFIED_CONFORMANT", a01Checklist, "", verifyReq), assignedUser, default); }
+    catch (DbUpdateException) { failed = true; }
+    finally { await db.Database.ExecuteSqlRawAsync("DROP TRIGGER fail_a01_verify"); }
+    if (!failed) throw new Exception("Forced verification failure did not fail.");
+}
+
+using (var db = new AppDbContext(options))
+{
+    var r = await db.Set<Reception>().SingleAsync(x => x.Id == a01ReceptionId);
+    var d = await db.Set<Dispatch>().SingleAsync(x => x.Id == a01DispatchId);
+    var t = await db.Set<VigiaPlatform.API.TransitTraceability.Domain.Model.Entities.DispatchTrip>().SingleAsync(x => x.DispatchId == a01DispatchId);
+    if (r.ClosedAt is not null || d.Status != DispatchStatus.InTransit || t.ActiveVehicleId is null)
+        throw new Exception("Failed verification left partial reception, dispatch or trip state committed.");
+
+    var svc = ReceptionSvc(db);
+    var verifyPayload = new VigiaPlatform.API.SiteReceptionAndVerification.Infrastructure.Integration.PhysicalVerification(
+        "VERIFIED_CONFORMANT", a01Checklist, "", verifyReq);
+    var verified = await svc.VerifyAsync(a01ReceptionId, verifyPayload, assignedUser, default)
+        ?? throw new Exception("Assigned resident verification returned null.");
+    if (verified.Status != VigiaPlatform.API.SiteReceptionAndVerification.Domain.Model.ValueObjects.ReceptionStatus.ConformantClosed)
+        throw new Exception("Reception did not close conformant.");
+
+    var replayed = await svc.VerifyAsync(a01ReceptionId, verifyPayload, assignedUser, default)
+        ?? throw new Exception("Idempotent verify replay returned null.");
+    if (replayed.Version != verified.Version)
+        throw new Exception("Idempotent verify replay mutated reception version.");
+}
+
+using (var db = new AppDbContext(options))
+{
+    var d = await db.Set<Dispatch>().SingleAsync(x => x.Id == a01DispatchId);
+    var t = await db.Set<VigiaPlatform.API.TransitTraceability.Domain.Model.Entities.DispatchTrip>().Include(x => x.Route).SingleAsync(x => x.DispatchId == a01DispatchId);
+    if (d.Status != DispatchStatus.Completed || t.ActiveVehicleId is not null || t.Route.IsActive)
+        throw new Exception("Conformant reception did not atomically close dispatch and release active trip.");
+    var posCountBefore = await db.Set<VigiaPlatform.API.TransitTraceability.Domain.Model.Entities.TelemetryPosition>().CountAsync(p => p.RouteId == t.RouteId);
+    await TripService(db).ReportAsync("GPS-A01-1", -12.10, -77.00, DateTimeOffset.UtcNow, 30, "a01-co", default);
+    var posCountAfter = await db.Set<VigiaPlatform.API.TransitTraceability.Domain.Model.Entities.TelemetryPosition>().CountAsync(p => p.RouteId == t.RouteId);
+    if (posCountAfter != posCountBefore)
+        throw new Exception("Late telemetry appended to a trip closed by conformant reception.");
+}
+Console.WriteLine("PASS: A01 project ownership, authoritative delivery guide, atomic/idempotent conformant closure, and active-trip release verified.");
+
