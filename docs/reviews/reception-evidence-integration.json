@@ -1,0 +1,43 @@
+{
+  "task": 16,
+  "dateLocal": "2026-11-24",
+  "owner": "Elias",
+  "githubAccount": "eliocerdan",
+  "branch": "fix/reception-evidence-integration",
+  "status": "Done for local integrated acceptance; release and Azure deployment remain scheduled separately",
+  "andreDeliveryReceived": true,
+  "receivedCommits": {
+    "backend": [
+      "4ce0e05",
+      "97c6493"
+    ],
+    "frontend": [
+      "15d9bce",
+      "dada9a7"
+    ]
+  },
+  "resolvedFindings": [
+    "F13-02",
+    "F13-03",
+    "F13-04",
+    "F13-05",
+    "F13-06",
+    "F13-07"
+  ],
+  "verification": {
+    "integrationHttpChecks": 84,
+    "evidenceHttpChecks": 106,
+    "regressionHttpChecks": 82,
+    "frontendTests": 25,
+    "frontendBuild": "Pass; existing chunk-size warning",
+    "nativeMySql": "Pass: reception ownership, exact guide, conformant atomic/idempotent close and active-trip release; photo/audit rollback and request retry",
+    "upgrade": "13 to14 on a clone:30 existing table counts and dispatch states preserved, including stored photo records",
+    "pdf": "Case number, stored photo ID and caption asserted in generated PDF; unauthorized download404",
+    "browser": "No new browser verification in row16; actual upload/download browser check was performed in row15"
+  },
+  "notes": [
+    "Original row13 diagnostic findings are historical. verify-reception-integration.py now asserts the repaired boundaries and zero findings.",
+    "Legacy verify-local.py now uses the server-issued guide instead of an invented fixture value; wrong guides are separately required to fail.",
+    "No main changes, release, production deployment or real IoT hardware acceptance."
+  ]
+}
