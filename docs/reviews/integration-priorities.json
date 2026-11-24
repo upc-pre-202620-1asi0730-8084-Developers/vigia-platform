@@ -1,0 +1,172 @@
+{
+  "task": 14,
+  "title": "Review progress and prioritize integration work",
+  "dateLocal": "2026-11-24",
+  "status": "Done as prioritization; no product acceptance implied",
+  "source": "docs/reviews/integration-contracts-review.json (row13 execution)",
+  "sourceBackend": "7c43657",
+  "sourceFrontend": "5cd4a62",
+  "openFindings": 6,
+  "fixedFindingsRetained": [
+    "F13-01",
+    "F13-08"
+  ],
+  "andreDeliveryReceived": false,
+  "priorityDefinitions": {
+    "P0": "Unauthorized read/write of another project; fix before shared/final release acceptance",
+    "P1": "Required business integrity or evidence capability; must also be resolved before final release"
+  },
+  "executionOrder": [
+    {
+      "order": 1,
+      "priority": "P0",
+      "findingIds": [
+        "F13-03",
+        "F13-07"
+      ],
+      "owner": "Andre",
+      "coordination": [
+        "Fabian"
+      ],
+      "scheduledWork": "A01/A02",
+      "title": "Enforce reception project authorization",
+      "action": "Resolve the dispatch/reception project on the server and enforce its assigned resident on every read/write path, including legacy endpoints. Keep administrator access explicit.",
+      "acceptance": [
+        "Assigned resident can register/read own reception",
+        "Unassigned resident receives403/404 on register/read/update/compare/verify and legacy reception paths",
+        "Changing a client project ID or role perspective does not grant access"
+      ],
+      "dependsOn": [],
+      "canStartNow": true
+    },
+    {
+      "order": 2,
+      "priority": "P0",
+      "findingIds": [
+        "F13-04"
+      ],
+      "owner": "Elias",
+      "coordination": [
+        "Andre"
+      ],
+      "scheduledWork": "Rows15/16; A01 coordination",
+      "title": "Enforce case, timeline, PDF and evidence authorization",
+      "action": "Resolve case -> reception -> actual project and authorize before producing or returning case/PDF/file data. Reuse canonical existing IDs.",
+      "acceptance": [
+        "Assigned resident/admin can read the permitted case and PDF",
+        "Unassigned resident gets403/404 for case/list/timeline/PDF/evidence with no content disclosure",
+        "A PDF generated for a known numeric ID is still protected"
+      ],
+      "dependsOn": [],
+      "canStartNow": true,
+      "integrationDependency": "Confirm A01/A03 contract before final integrated acceptance; do not wait to implement own access checks."
+    },
+    {
+      "order": 3,
+      "priority": "P1",
+      "findingIds": [
+        "F13-06"
+      ],
+      "owner": "Andre",
+      "coordination": [
+        "Leonardo"
+      ],
+      "scheduledWork": "A01",
+      "title": "Require the immutable dispatch guide",
+      "action": "Use the server-issued guide and its dispatch ID as the authoritative receipt source; reject a missing, invented or other-dispatch guide.",
+      "acceptance": [
+        "The exact issued guide is accepted for its dispatch",
+        "A different guide is rejected400/409 with no receipt saved",
+        "Front end displays authoritative guide/cargo rather than treating typed text as authorization"
+      ],
+      "dependsOn": [
+        "F13-03",
+        "F13-07"
+      ],
+      "canStartNow": true
+    },
+    {
+      "order": 4,
+      "priority": "P1",
+      "findingIds": [
+        "F13-02"
+      ],
+      "owner": "Andre",
+      "coordination": [
+        "Fabian",
+        "Leonardo"
+      ],
+      "scheduledWork": "A01; integrated checks in rows16/18/20",
+      "title": "Close conforming receipt and dispatch atomically",
+      "action": "Coordinate conforming receipt, dispatch COMPLETED and active-trip reservation closure in one transaction, with safe retries. Preserve histories and leave discrepancy handling explicit.",
+      "acceptance": [
+        "A conforming closure commits reception and dispatch states together",
+        "A forced failure rolls back all state changes",
+        "An exact retry does not create another reception/case or repeat the closure",
+        "A completed dispatch no longer reserves its vehicle; late telemetry does not append to a closed trip"
+      ],
+      "dependsOn": [
+        "F13-06"
+      ],
+      "canStartNow": true,
+      "integrationDependency": "Andre implementation required; Fabian verifies transit reservation and Leonardo verifies dispatch state."
+    },
+    {
+      "order": 5,
+      "priority": "P1",
+      "findingIds": [
+        "F13-05"
+      ],
+      "owner": "Elias",
+      "coordination": [
+        "Andre"
+      ],
+      "scheduledWork": "Rows15/16; A03",
+      "title": "Persist and retrieve actual evidence files",
+      "action": "Keep the agreed simple backend storage approach; verify actual upload bytes, persisted metadata, authenticated retrieval and ownership. An external URL or checklist is insufficient.",
+      "acceptance": [
+        "Uploaded file survives service restart and can be retrieved by an authorized user",
+        "Metadata retains case/reception/dispatch linkage",
+        "Unassigned access is rejected",
+        "An upload error does not report a saved photograph or leave an orphan reference"
+      ],
+      "dependsOn": [
+        "F13-04"
+      ],
+      "canStartNow": true,
+      "integrationDependency": "File work can be tested in isolation now; A03 submission and full receipt integration require Andre delivery."
+    }
+  ],
+  "nextTask": {
+    "row": 15,
+    "owner": "Elias",
+    "startNow": [
+      "Case/PDF/file authorization using existing IDs",
+      "Isolated actual-file persistence and retrieval checks"
+    ],
+    "deferFinalAcceptanceUntil": [
+      "A01/A02/A03 delivered and integrated",
+      "All six findings corrected and negative permission tests pass",
+      "Conformant and discrepant end-to-end flows pass"
+    ]
+  },
+  "releaseGate": {
+    "ready": false,
+    "requiredClosedFindingIds": [
+      "F13-02",
+      "F13-03",
+      "F13-04",
+      "F13-05",
+      "F13-06",
+      "F13-07"
+    ],
+    "verification": "Repeat the row13 checks as strict acceptance tests after fixes; diagnostic requests that reproduced vulnerabilities are not passing security acceptance."
+  },
+  "outOfScope": [
+    "No implementation of Andre work in this row",
+    "No scope expansion to new features or infrastructure",
+    "No new functional test execution claimed; row13 evidence reused",
+    "No main changes, release, Azure startup or deployment",
+    "No messages sent to Andre or other people"
+  ]
+}
