@@ -385,7 +385,7 @@ using (var db = new AppDbContext(options))
     a01SiteId = project.Id;
 
     var order = new Order(new VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.Commands.CreateOrderCommand(
-        "SOL-A01-1", project.Name, "Assigned Resident",
+        "SOL-990014", project.Name, "Assigned Resident",
         VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.ValueObjects.Order.Order.OrderPriorityType.Average,
         DateOnly.FromDateTime(DateTime.UtcNow), "Cement", null,
         [new("Cement", 5, VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.ValueObjects.Order.Items.ItemsUnitType.u, null)], []), DateTime.UtcNow);
