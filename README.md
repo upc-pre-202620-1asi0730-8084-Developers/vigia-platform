@@ -63,3 +63,21 @@ dotnet run --project .\tests\VigiaPlatform.IntegrationChecks -- .\VigiaPlatform.
 ```
 
 The HTTP checks exercise authentication, role restrictions, profile ownership, persisted queries, order transitions, telemetry, reception updates/comparison, conformity, discrepancy handling, case closure, history and PDF export. They create test records. The .NET checks create a separate timestamped `vigia_local_atomicity_...` database and force an activity-write failure to verify rollback, then check successful atomic persistence and child-only telemetry history. Test databases are retained for inspection.
+
+## Resident material requests (US-03)
+
+`GET /api/v1/orders/request-catalog` returns assigned projects and requestable material IDs/names/units to `SITE_MANAGER`; it does not expose warehouse stock. `ADMIN` can request the full catalog. Projects must be assigned by the authenticated account ID in `ManagerId`; changing a display name does not grant access. Materials with no project association are shared catalog entries; project-specific materials are restricted to that project.
+
+`POST /api/v1/orders/requests` accepts `projectId`, `priority` (`LOW`, `AVERAGE`, `HIGH`), `date` (`yyyy-MM-dd`), `observations` and `items` containing `materialId`, positive integer `quantity` and optional `observation`. The server resolves project/material names and units, derives the requester from authentication and generates the `SOL-...` code. It returns `201` with the existing order resource in `PENDING`. Invalid lines return `400`, an unassigned project or role returns `403`, and a generated-code conflict returns `409`. Submission makes the request available in the warehouse pending queue; it does not automatically approve it.
+
+Residents can query `/orders` (including existing status/code filters) and `/orders/{id}` only for their own account. Other residents' IDs and historical unowned orders return `404`. Warehouse/admin list and review permissions remain; legacy creation, status changes and attached-file mutation are not opened to residents. No ownership is inferred from `requesterName`.
+
+Apply the additive `AddOrderRequesterAccount` migration through the existing controlled deployment sequence. Existing rows retain `NULL` ownership and remain available to warehouse/admin. Review a separate controlled backfill if historical resident access is required. Do not rewrite `InitialCreate` or run migrations against an old EnsureCreated database. Production catalog loading remains a separate reviewed operation; do not enable the local demo seeder there. Scalar documents the new routes without replacing its existing setup.
+
+For local verification, start a fresh database with `scripts/start-local.ps1 -Database vigia_local_resident_check -Port 5135`, then run:
+
+```powershell
+python scripts/verify-resident-orders.py --allow-local-writes
+```
+
+The checks exercise assigned catalog access, spoofed identity fields, validation, isolation between accounts with equal display names, warehouse review and historical-order access. They create local-only fixtures and never contact Azure.

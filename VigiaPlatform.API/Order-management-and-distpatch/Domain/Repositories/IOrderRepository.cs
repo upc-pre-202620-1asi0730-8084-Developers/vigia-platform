@@ -6,6 +6,7 @@ namespace VigiaPlatform.API.Order_management_and_distpatch.Domain.Repositories;
 
 public interface IOrderRepository : IBaseRepository<Order>
 {
+    Task<IEnumerable<Order>> FindByRequesterAsync(int accountId, CancellationToken cancellationToken = default);
     Task<IEnumerable<Order>> FindByStatusAsync(OrderStatusType status,
         CancellationToken cancellationToken = default);
 

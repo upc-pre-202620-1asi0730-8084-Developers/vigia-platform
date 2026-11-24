@@ -8,6 +8,8 @@ namespace VigiaPlatform.API.Order_management_and_distpatch.Application.Internal.
 
 public class OrderQueryService(IOrderRepository orderRepository) : IOrderQueryService
 {
+    public Task<IEnumerable<Order>> Handle(GetOrdersByRequesterQuery query, CancellationToken cancellationToken = default) =>
+        orderRepository.FindByRequesterAsync(query.AccountId, cancellationToken);
     public async Task<IEnumerable<Order>> Handle(GetAllOrdersQuery query,
         CancellationToken cancellationToken = default)
     {

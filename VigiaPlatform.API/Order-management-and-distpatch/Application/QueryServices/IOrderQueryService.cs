@@ -5,6 +5,7 @@ namespace VigiaPlatform.API.Order_management_and_distpatch.Application.QueryServ
 
 public interface IOrderQueryService
 {
+    Task<IEnumerable<Order>> Handle(GetOrdersByRequesterQuery query, CancellationToken cancellationToken = default);
     Task<IEnumerable<Order>> Handle(GetAllOrdersQuery query, CancellationToken cancellationToken = default);
     Task<Order?> Handle(GetOrderByIdQuery query, CancellationToken cancellationToken = default);
     Task<Order?> Handle(GetOrderByCodeQuery query, CancellationToken cancellationToken = default);

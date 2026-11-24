@@ -1,4 +1,5 @@
 using System.Net.Mime;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using VigiaPlatform.API.Order_management_and_distpatch.Application.CommandServices;
 using VigiaPlatform.API.Order_management_and_distpatch.Application.QueryServices;
@@ -10,7 +11,7 @@ using VigiaPlatform.API.Order_management_and_distpatch.Interfaces.Rest.Transform
 
 namespace VigiaPlatform.API.Order_management_and_distpatch.Interfaces.Rest;
 
-[Microsoft.AspNetCore.Authorization.Authorize(Roles = "ADMIN,WAREHOUSE_MANAGER")]
+[Microsoft.AspNetCore.Authorization.Authorize(Roles = "ADMIN,WAREHOUSE_MANAGER,SITE_MANAGER")]
 [ApiController]
 [Route("api/v1/orders")]
 [Produces(MediaTypeNames.Application.Json)]
@@ -34,7 +35,19 @@ public class OrdersController(
     {
         IEnumerable<Order> orders;
 
-        if (!string.IsNullOrWhiteSpace(status))
+        if (User.IsInRole("SITE_MANAGER"))
+        {
+            var accountId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            orders = await orderQueryService.Handle(new GetOrdersByRequesterQuery(accountId), cancellationToken);
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                if (!Enum.TryParse<OrderStatusType>(status.Replace("_", string.Empty), true, out var requestedStatus) ||
+                    !Enum.IsDefined(requestedStatus)) return BadRequest($"Invalid status '{status}'");
+                orders = orders.Where(o => o.Status == requestedStatus);
+            }
+            else if (!string.IsNullOrWhiteSpace(code)) orders = orders.Where(o => o.Code.Value == code.Trim().ToUpperInvariant());
+        }
+        else if (!string.IsNullOrWhiteSpace(status))
         {
             if (!Enum.TryParse<OrderStatusType>(status.Replace("_", string.Empty), true, out var parsedStatus))
                 return BadRequest($"Invalid status '{status}'");
@@ -65,6 +78,8 @@ public class OrdersController(
     public async Task<IActionResult> GetOrderById(int orderId, CancellationToken cancellationToken)
     {
         var order = await orderQueryService.Handle(new GetOrderByIdQuery(orderId), cancellationToken);
+        if (User.IsInRole("SITE_MANAGER") && order?.RequesterAccountId != int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!))
+            return NotFound();
 
         return OrderActionResultAssembler.ToActionResultFromGetOrderResult(
             this,
@@ -76,6 +91,7 @@ public class OrdersController(
     ///     Creates an order.
     /// </summary>
     [HttpPost]
+    [Microsoft.AspNetCore.Authorization.Authorize(Roles = "ADMIN,WAREHOUSE_MANAGER")]
     [EndpointSummary("Create an order")]
     [EndpointDescription("Create a new material order with its items. It starts with the PENDING status.")]
     [ProducesResponseType(typeof(OrderResource), StatusCodes.Status201Created)]
@@ -105,6 +121,7 @@ public class OrdersController(
     ///     Attaches a file to an order.
     /// </summary>
     [HttpPost("{orderId:int}/attached-files")]
+    [Microsoft.AspNetCore.Authorization.Authorize(Roles = "ADMIN,WAREHOUSE_MANAGER")]
     [EndpointSummary("Attach a file to an order")]
     [EndpointDescription("Attach a file to an order that has not been approved or rejected yet.")]
     [ProducesResponseType(typeof(OrderResource), StatusCodes.Status200OK)]
@@ -134,6 +151,7 @@ public class OrdersController(
     ///     Changes the status of an order.
     /// </summary>
     [HttpPatch("{orderId:int}/status")]
+    [Microsoft.AspNetCore.Authorization.Authorize(Roles = "ADMIN,WAREHOUSE_MANAGER")]
     [EndpointSummary("Change the status of an order")]
     [EndpointDescription("Move the order forward: UNDER_REVIEW, then APPROVED or REJECTED. A reason is required to reject.")]
     [ProducesResponseType(typeof(OrderResource), StatusCodes.Status200OK)]
