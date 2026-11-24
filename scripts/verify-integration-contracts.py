@@ -14,7 +14,8 @@ def request(method,path,body=None,token=None,status=200):
  except urllib.error.HTTPError as e:code,data=e.code,e.read()
  assert code in (status if isinstance(status,tuple) else (status,)),f'{method} {path}: expected {status}, got {code}: {data[:300]!r}'
  checks+=1
- value=data if data.startswith(b'%PDF-') else json.loads(data) if data else None
+ try:value=data if data.startswith(b'%PDF-') else json.loads(data) if data else None
+ except json.JSONDecodeError:value=data.decode('utf-8',errors='replace')
  return value if not isinstance(status,tuple) else (code,value)
 def finding(id,owner,message,observed):
  findings.append({'id':id,'owner':owner,'status':'Open','message':message,'observed':observed})
@@ -58,6 +59,12 @@ request('POST',f'/receptions/{rid}/evidence',{'evidenceType':'PHOTO','fileUrl':'
 closed=request('POST',f'/receptions/{rid}/verify',{'status':'VERIFIED_DISCREPANT','checklist':body['checklist'],'observations':body['observations']},s);assert closed['status']=='DiscrepancyReported'
 case=next(c for c in request('GET','/discrepancy-cases',token=s) if c['receptionId']==str(rid));assert case['dispatchId']==str(d['id'])
 assert request('GET',f"/discrepancy-cases/{case['id']}/timeline",token=s)
+request('PATCH',f"/discrepancy-cases/{case['id']}",{'status':'Closed'},s,409)
+request('PATCH',f"/discrepancy-cases/{case['id']}",{'responsibility':'Transport'},s)
+resolved=request('PATCH',f"/discrepancy-cases/{case['id']}",{'status':'Closed'},s)
+assert resolved['status']=='Closed' and resolved['resolutionSummary'] is None
+observations['caseClosure']='Liability required; resolution summary optional in current API'
+
 pdf=request('GET',f"/discrepancy-cases/{case['id']}/report",token=s);assert pdf.startswith(b'%PDF-') and b'%%EOF' in pdf
 code,_=request('GET',f"/discrepancy-cases/{case['id']}/report",token=outsider,status=(200,403,404));observations['outsiderCaseReportStatus']=code
 if code==200:finding('F13-04','Elias row15/16; coordinate Andre A01','Unassigned resident can download another project discrepancy report.',code)

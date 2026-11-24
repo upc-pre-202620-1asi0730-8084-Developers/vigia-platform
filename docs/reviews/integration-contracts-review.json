@@ -1,15 +1,17 @@
 {
   "review": "row13 integration contract review",
-  "httpChecks": 72,
+  "httpChecks": 75,
   "foundationVerified": true,
   "externalReceptionAccepted": false,
   "andreDeliveryReceived": false,
   "observations": {
     "conformantDispatchStatus": "IN_TRANSIT",
     "outsiderReceptionStatus": 200,
+    "caseClosure": "Liability required; resolution summary optional in current API",
     "outsiderCaseReportStatus": 200,
     "wrongGuideReceptionStatus": 201,
-    "outsiderRegistrationStatus": 201
+    "outsiderRegistrationStatus": 201,
+    "errorResponseContract": "Current case-closing conflict can be plain text; verification accepts text and JSON without assuming an envelope."
   },
   "findings": [
     {
@@ -66,6 +68,12 @@
       "message": "Duplicate project names now reject dispatch planning without creating a dispatch. Unique-name planning remains supported.",
       "backendCommit": "843c64c",
       "frontendContractTestsCommit": "20aa05d"
+    },
+    {
+      "id": "F13-08",
+      "owner": "Elias",
+      "status": "Fixed",
+      "message": "Frontend case entity and assembler preserve receptionId, caseNumber, closedAt and resolutionSummary; contract test verifies the original values."
     }
   ],
   "acceptanceGate": "Row13 review completed; US09/TS04/US10 and final release are not accepted until the external handoff and findings are resolved.",
