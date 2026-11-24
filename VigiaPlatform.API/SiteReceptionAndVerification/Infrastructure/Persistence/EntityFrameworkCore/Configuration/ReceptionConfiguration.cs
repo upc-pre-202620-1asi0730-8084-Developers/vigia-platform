@@ -36,6 +36,9 @@ public class ReceptionConfiguration : IEntityTypeConfiguration<Reception>
         builder.Property(r => r.ReceiverNotes).HasMaxLength(500);
         builder.Property(r => r.VerifiedByUserId).HasMaxLength(50);
         builder.Property(r => r.ClosedAt);
+        builder.Property(r => r.Version).IsConcurrencyToken();
+        builder.Property(r => r.RegisterRequestId).HasMaxLength(36);
+        builder.Property(r => r.VerifyRequestId).HasMaxLength(36);
 
         // Owned Value Object: ScaleWeight
         builder.OwnsOne(r => r.ScaleWeight, sw =>

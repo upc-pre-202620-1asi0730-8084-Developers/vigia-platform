@@ -45,7 +45,7 @@ def ready():
 checklist={'materialGoodCondition':True,'quantityVerified':True,'deliveryGuideReceived':True,'photographicEvidence':False,'observationsRecorded':False}
 def receipt_body(d,guide,quantity=3):return {'dispatchId':str(d['id']),'deliveryGuideNumber':guide['guideNumber'],'driverName':guide['driverName'],'items':[{'materialName':i['material'],'receivedQuantity':quantity} for i in d['items']],'checklist':checklist,'observations':''}
 
-import base64,hashlib,struct,zlib,concurrent.futures
+import base64,hashlib,struct,zlib,concurrent.futures,re
 
 def png(width=16,height=16):
  def chunk(kind,data):return struct.pack('>I',len(data))+kind+data+struct.pack('>I',zlib.crc32(kind+data)&0xffffffff)
@@ -95,7 +95,10 @@ case=next(c for c in request('GET','/discrepancy-cases',token=s) if c['reception
 assert not any(c['id']==cid for c in request('GET','/discrepancy-cases',token=outsider))
 for endpoint in ['', '/timeline','/report','/reception']:
  request('GET',f'/discrepancy-cases/{cid}'+endpoint,token=outsider,status=404)
- request('GET',f'/discrepancy-cases/{cid}'+endpoint,token=s)
+ result=request('GET',f'/discrepancy-cases/{cid}'+endpoint,token=s)
+ if endpoint=='/report':
+  text=re.sub(rb'\s+',b'',b''.join(re.findall(rb'\((.*?)\) Tj',result)))
+  assert case['caseNumber'].encode() in text and photo['id'].encode() in text and b'Localreceiptevidence' in text
 request('PATCH',f'/discrepancy-cases/{cid}',{'responsibility':'Transport'},outsider,404)
 request('POST','/discrepancy-cases',{'receptionId':str(rid),'dispatchId':str(d['id']),'caseNumber':'FORBIDDEN'},outsider,404)
 request('POST','/discrepancy-cases',{'receptionId':str(rid),'dispatchId':'wrong','caseNumber':'MISMATCH'},s,400)

@@ -1334,6 +1334,11 @@ namespace VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCor
                         .HasColumnType("varchar(500)")
                         .HasColumnName("receiver_notes");
 
+                    b.Property<string>("RegisterRequestId")
+                        .HasMaxLength(36)
+                        .HasColumnType("varchar(36)")
+                        .HasColumnName("register_request_id");
+
                     b.Property<int>("SiteId")
                         .HasColumnType("int")
                         .HasColumnName("site_id");
@@ -1364,6 +1369,16 @@ namespace VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCor
                         .HasMaxLength(50)
                         .HasColumnType("varchar(50)")
                         .HasColumnName("verified_by_user_id");
+
+                    b.Property<string>("VerifyRequestId")
+                        .HasMaxLength(36)
+                        .HasColumnType("varchar(36)")
+                        .HasColumnName("verify_request_id");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint")
+                        .HasColumnName("version");
 
                     b.HasKey("Id")
                         .HasName("pk_receptions");

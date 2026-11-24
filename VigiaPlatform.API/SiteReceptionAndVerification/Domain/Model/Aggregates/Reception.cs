@@ -40,6 +40,7 @@ public partial class Reception : IAuditableEntity
     public string? DeliveryNoteNumber { get; private set; }
     public string? ReceiverNotes { get; private set; }
     public DateTimeOffset? ClosedAt { get; private set; }
+    public long Version { get; private set; }
 
     public DateTimeOffset? CreatedAt { get; set; }
     public DateTimeOffset? UpdatedAt { get; set; }
@@ -114,6 +115,7 @@ public partial class Reception : IAuditableEntity
         ReceiverNotes = string.IsNullOrWhiteSpace(receiverNotes) ? null : receiverNotes.Trim();
 
         Status = ReceptionStatus.ReceiptConfirmed;
+        Version++;
     }
 
     /// <summary>
@@ -137,6 +139,7 @@ public partial class Reception : IAuditableEntity
         {
             Status = ReceptionStatus.MaterialVerified;
         }
+        Version++;
     }
 
     /// <summary>
@@ -158,6 +161,7 @@ public partial class Reception : IAuditableEntity
         ReceiverNotes = string.IsNullOrWhiteSpace(complianceNotes) ? ReceiverNotes : complianceNotes.Trim();
         Status = ReceptionStatus.ConformantClosed;
         ClosedAt = DateTimeOffset.UtcNow;
+        Version++;
     }
 
     /// <summary>
@@ -177,6 +181,7 @@ public partial class Reception : IAuditableEntity
 
         Discrepancy = new DiscrepancyDetails(reason, description, severity);
         Status = ReceptionStatus.DiscrepancyReported;
+        Version++;
     }
 
     /// <summary>
@@ -188,6 +193,7 @@ public partial class Reception : IAuditableEntity
 
         var evidence = new ReceptionEvidence(evidenceType, fileUrl, description);
         _evidences.Add(evidence);
+        Version++;
         return evidence;
     }
 
@@ -200,6 +206,7 @@ public partial class Reception : IAuditableEntity
         Discrepancy = new DiscrepancyDetails("REJECTION", reason, "Critical");
         Status = ReceptionStatus.Rejected;
         ClosedAt = DateTimeOffset.UtcNow;
+        Version++;
     }
 
     private void EnsureNotClosed()

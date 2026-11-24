@@ -98,13 +98,13 @@ for discrepant in (False, True):
     request('PUT', dispatch_path + '/vehicle', {'vehicleId': vehicle['id'], 'vehiclePlate': vehicle['licensePlate'], 'performedBy': 'spoofed'}, warehouse)
     request('PATCH', dispatch_path + '/status', {'status': 'IN_TRANSIT', 'performedBy': 'spoofed'}, warehouse, 409)
     request('POST', dispatch_path + '/weighing', {'weightKg': 100, 'expectedWeightKg': 100, 'toleranceKg': 2}, warehouse, 201)
-    request('POST', dispatch_path + '/delivery-guide', {'driverName': 'Local Driver', 'carrierName': 'Local Carrier'}, warehouse, 201)
+    guide = request('POST', dispatch_path + '/delivery-guide', {'driverName': 'Local Driver', 'carrierName': 'Local Carrier'}, warehouse, 201)
     depart(request, dispatch_path, warehouse)
     arrivals = request('GET', '/upcoming-arrivals', token=site)
     assert any(str(a['dispatchId']) == str(dispatch['id']) for a in arrivals)
     checklist = {'materialGoodCondition': True, 'quantityVerified': True, 'deliveryGuideReceived': True,
                  'photographicEvidence': False, 'observationsRecorded': discrepant}
-    arrival = {'dispatchId': str(dispatch['id']), 'deliveryGuideNumber': 'GR-LOCAL-' + secrets.token_hex(3),
+    arrival = {'dispatchId': str(dispatch['id']), 'deliveryGuideNumber': guide['guideNumber'],
                'driverName': 'Local Driver', 'checklist': checklist, 'observations': 'Difference found' if discrepant else '',
                'items': [{'materialName': item['material'], 'receivedQuantity': item['quantity'] - (1 if discrepant else 0)} for item in dispatch['items']]}
     reception = request('POST', '/receptions/physical', arrival, site, 201)
