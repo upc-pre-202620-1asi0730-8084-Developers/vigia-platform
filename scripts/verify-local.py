@@ -1,3 +1,4 @@
+from local_trip_fixture import fresh_vehicle, depart
 import argparse
 import datetime as dt
 import json
@@ -73,7 +74,7 @@ if pending:
     request('PATCH', order_path, {'status': 'UNDER_REVIEW', 'performedBy': 'spoofed'}, warehouse)
     result = request('PATCH', order_path, {'status': 'APPROVED', 'performedBy': 'spoofed'}, warehouse)
     assert result['timeline'][-1]['user'] == 'Local Warehouse Manager'
-vehicle = request('GET', '/vehicles', token=warehouse)[0]
+vehicle = fresh_vehicle(request, warehouse)
 unpaired = request('POST', '/telemetry/reports', {'gpsDeviceId': 'UNPAIRED-LOCAL', 'latitude': -12.08, 'longitude': -77.03}, warehouse)
 assert unpaired['recorded'] is True and unpaired['accepted'] is False
 request('POST', '/telemetry/reports', {'gpsDeviceId': vehicle['gpsDeviceId'], 'latitude': -12.08, 'longitude': -77.03}, warehouse)
@@ -86,6 +87,7 @@ request('POST', f"/routes/{route['id']}/positions", {**position, 'reportedAt': (
 request('POST', f"/routes/{route['id']}/signal-lost", {'detectedAt': (now + dt.timedelta(seconds=1)).isoformat()}, warehouse)
 
 for discrepant in (False, True):
+    if discrepant: vehicle = fresh_vehicle(request, warehouse)
     plan = {'projectName': approved['projectName'], 'relatedOrderId': str(approved['id']),
             'departureDate': now.date().isoformat(), 'estimatedTime': '18:00',
             'dispatchType': 'DEPARTURE_TO_WORK', 'priority': 'AVERAGE', 'observations': 'HTTP integration verification'}
@@ -97,7 +99,7 @@ for discrepant in (False, True):
     request('PATCH', dispatch_path + '/status', {'status': 'IN_TRANSIT', 'performedBy': 'spoofed'}, warehouse, 409)
     request('POST', dispatch_path + '/weighing', {'weightKg': 100, 'expectedWeightKg': 100, 'toleranceKg': 2}, warehouse, 201)
     request('POST', dispatch_path + '/delivery-guide', {'driverName': 'Local Driver', 'carrierName': 'Local Carrier'}, warehouse, 201)
-    request('PATCH', dispatch_path + '/status', {'status': 'IN_TRANSIT', 'performedBy': 'spoofed'}, warehouse)
+    depart(request, dispatch_path, warehouse)
     arrivals = request('GET', '/upcoming-arrivals', token=site)
     assert any(str(a['dispatchId']) == str(dispatch['id']) for a in arrivals)
     checklist = {'materialGoodCondition': True, 'quantityVerified': True, 'deliveryGuideReceived': True,

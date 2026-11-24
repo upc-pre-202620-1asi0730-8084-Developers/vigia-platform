@@ -25,6 +25,10 @@ public class TransitRoute : IAuditableEntity
     private readonly List<TransitAlert> _alerts = [];
 
     public int Id { get; private set; }
+    public long Version { get; private set; }
+    public DispatchTrip? Trip { get; private set; }
+    public void BindTrip(DispatchTrip trip) => Trip = trip;
+    public void CloseTracking() => Version++;
     public string DispatchId { get; private set; } = string.Empty;
     public int VehicleId { get; private set; }
     public string VehiclePlate { get; private set; } = string.Empty;
@@ -96,7 +100,7 @@ public class TransitRoute : IAuditableEntity
     }
 
     /// <summary>Whether the route still accepts telemetry.</summary>
-    public bool IsActive => Status != RouteStatus.Arrived;
+    public bool IsActive => Status != RouteStatus.Arrived && (Trip is null || Trip.ActiveVehicleId is not null);
 
     /// <summary>Last reported position.</summary>
     public TelemetryPosition? CurrentPosition => _positions.Count > 0 ? _positions[^1] : null;
@@ -154,6 +158,7 @@ public class TransitRoute : IAuditableEntity
     public IReadOnlyList<TransitAlert> RegisterPosition(double latitude, double longitude, double speedKmh, DateTimeOffset reportedAt)
     {
         EnsureActive();
+        Version++;
 
         var previous = CurrentPosition;
         if (previous is not null && reportedAt < previous.ReportedAt)
@@ -202,10 +207,13 @@ public class TransitRoute : IAuditableEntity
     public TransitAlert ReportSignalLost(DateTimeOffset detectedAt)
     {
         EnsureActive();
+        Version++;
         if (Status == RouteStatus.SignalLost)
             throw new TransitTraceabilityException(TransitTraceabilityErrorCodes.SignalAlreadyLost,
                 $"Route {Id} signal is already lost.");
 
+        if(detectedAt < (CurrentPosition?.ReportedAt ?? StartedAt))
+            throw new TransitTraceabilityException(TransitTraceabilityErrorCodes.InvalidPosition,"The signal event predates the last known trip event.");
         var alert = RaiseAlert(TransitAlertType.SignalLost, CurrentPosition, null, detectedAt);
         Status = RouteStatus.SignalLost;
         return alert;
@@ -219,6 +227,7 @@ public class TransitRoute : IAuditableEntity
         var alert = _alerts.FirstOrDefault(a => a.Id == alertId)
                     ?? throw new TransitTraceabilityException(TransitTraceabilityErrorCodes.AlertNotFound,
                         $"Alert {alertId} not found in route {Id}.");
+        Version++;
         alert.MarkAsNotified(notifiedAt);
         return alert;
     }

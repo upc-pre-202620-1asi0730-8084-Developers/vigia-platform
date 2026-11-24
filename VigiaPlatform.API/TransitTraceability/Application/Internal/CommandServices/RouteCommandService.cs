@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore;
+using MySql.Data.MySqlClient;
 using VigiaPlatform.API.Shared.Application.Patterns;
 using VigiaPlatform.API.Shared.Domain.Repositories;
 using VigiaPlatform.API.TransitTraceability.Domain.Exceptions;
@@ -33,7 +35,10 @@ public class RouteCommandService(IRouteRepository routeRepository, IUnitOfWork u
         }
 
         await routeRepository.AddAsync(route, cancellationToken);
-        await unitOfWork.CompleteAsync(cancellationToken);
+        try { await unitOfWork.CompleteAsync(cancellationToken); }
+        catch (DbUpdateConcurrencyException) { return Fail<TransitRoute>("CONCURRENT_TRIP_CHANGE","Refresh and retry."); }
+        catch (DbUpdateException ex) when (ex.GetBaseException() is MySqlException { Number:1062 or 1205 or 1213 })
+        { return Fail<TransitRoute>("CONCURRENT_TRIP_CHANGE","Refresh and retry after a concurrent write."); }
         return new Result<TransitRoute, TransitTraceabilityError>.Success(route);
     }
 
@@ -42,6 +47,7 @@ public class RouteCommandService(IRouteRepository routeRepository, IUnitOfWork u
         var route = await routeRepository.FindByIdWithDetailsAsync(command.RouteId, cancellationToken);
         if (route is null) return RouteNotFound<TransitOutcome>(command.RouteId);
 
+        if (route.Trip is not null) return Fail<TransitOutcome>("DEVICE_REPORT_REQUIRED", "Submit GPS device reports through /telemetry/reports.");
         IReadOnlyList<TransitAlert> raised;
         try
         {
@@ -53,7 +59,10 @@ public class RouteCommandService(IRouteRepository routeRepository, IUnitOfWork u
             return Fail<TransitOutcome>(e.Code, e.Message);
         }
 
-        await unitOfWork.CompleteAsync(cancellationToken);
+        try { await unitOfWork.CompleteAsync(cancellationToken); }
+        catch (DbUpdateConcurrencyException) { return Fail<TransitOutcome>("CONCURRENT_TRIP_CHANGE","Refresh and retry."); }
+        catch (DbUpdateException ex) when (ex.GetBaseException() is MySqlException { Number:1062 or 1205 or 1213 })
+        { return Fail<TransitOutcome>("CONCURRENT_TRIP_CHANGE","Refresh and retry after a concurrent write."); }
         return new Result<TransitOutcome, TransitTraceabilityError>.Success(new TransitOutcome(route, raised));
     }
 
@@ -72,7 +81,10 @@ public class RouteCommandService(IRouteRepository routeRepository, IUnitOfWork u
             return Fail<TransitOutcome>(e.Code, e.Message);
         }
 
-        await unitOfWork.CompleteAsync(cancellationToken);
+        try { await unitOfWork.CompleteAsync(cancellationToken); }
+        catch (DbUpdateConcurrencyException) { return Fail<TransitOutcome>("CONCURRENT_TRIP_CHANGE","Refresh and retry."); }
+        catch (DbUpdateException ex) when (ex.GetBaseException() is MySqlException { Number:1062 or 1205 or 1213 })
+        { return Fail<TransitOutcome>("CONCURRENT_TRIP_CHANGE","Refresh and retry after a concurrent write."); }
         return new Result<TransitOutcome, TransitTraceabilityError>.Success(new TransitOutcome(route, [alert]));
     }
 
@@ -91,7 +103,10 @@ public class RouteCommandService(IRouteRepository routeRepository, IUnitOfWork u
             return Fail<TransitAlert>(e.Code, e.Message);
         }
 
-        await unitOfWork.CompleteAsync(cancellationToken);
+        try { await unitOfWork.CompleteAsync(cancellationToken); }
+        catch (DbUpdateConcurrencyException) { return Fail<TransitAlert>("CONCURRENT_TRIP_CHANGE","Refresh and retry."); }
+        catch (DbUpdateException ex) when (ex.GetBaseException() is MySqlException { Number:1062 or 1205 or 1213 })
+        { return Fail<TransitAlert>("CONCURRENT_TRIP_CHANGE","Refresh and retry after a concurrent write."); }
         return new Result<TransitAlert, TransitTraceabilityError>.Success(alert);
     }
 

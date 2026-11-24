@@ -220,3 +220,71 @@ using (var db = new AppDbContext(options))
 }
 Console.WriteLine("PASS: duplicate geofence registration rolls back without an orphan business record.");
 Console.WriteLine($"PASS: complete migration chain, real MySQL rollback, atomic success, weighing and guide audit rollback, stale load/guide rejection, telemetry history and legacy-schema safety. Database: {connection.Database}");
+using (var db = new AppDbContext(options))
+{
+    db.Add(new VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Model.Aggregates.Vehicle("company",
+        new VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Model.ValueObjects.LicensePlate("TRP-123"),"Local","Atomic trip",
+        new VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Model.ValueObjects.VehicleCapacity(8),"GPS-ATOMIC-TRIP"));
+    db.Add(new VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Model.Aggregates.Geofence("company","atomic-origin","Origin",
+        VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Model.ValueObjects.GeofenceType.Warehouse,fleetLocation,100));
+    db.Add(new VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Model.Aggregates.Geofence("company","site-check","Destination",
+        VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Model.ValueObjects.GeofenceType.JobSite,
+        new VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Model.ValueObjects.Location(-12.13,-76.98),100));
+    var dispatch=await db.Set<Dispatch>().Include(d=>d.Items).Include(d=>d.Timeline).Include(d=>d.Weighings).Include(d=>d.DeliveryGuide).SingleAsync(d=>d.Id==weighingDispatchId);
+    dispatch.RecordNetWeight(100m,100m,2m,1,"Integration Check",DateTimeOffset.UtcNow,Guid.NewGuid());
+    await new UnitOfWork(db,[new ActivityChangeRecorder(db,accessor)]).CompleteAsync();
+    dispatch.IssueDeliveryGuide("Driver","Carrier",1,"Integration Check",DateTimeOffset.UtcNow,Guid.NewGuid());
+    await new UnitOfWork(db,[new ActivityChangeRecorder(db,accessor)]).CompleteAsync();
+}
+VigiaPlatform.API.TransitTraceability.Infrastructure.Integration.DispatchTransitService TripService(AppDbContext db) => new(db,
+    new VigiaPlatform.API.Order_management_and_distpatch.Infrastructure.Persistence.EntityFrameworkCore.Repositories.DispatchRepository(db),
+    new UnitOfWork(db,[new ActivityChangeRecorder(db,accessor)]));
+VigiaPlatform.API.TransitTraceability.Infrastructure.Integration.DeparturePlan tripPlan;
+long tripVehicleVersion;
+using (var db=new AppDbContext(options))
+{
+    tripVehicleVersion=(await db.Vehicles.SingleAsync()).PositionVersion;
+    var origin=await db.Geofences.SingleAsync(g=>g.CompanyId=="company"&&g.SiteId=="atomic-origin");
+    tripPlan=new(origin.Id,DateTimeOffset.UtcNow.AddHours(1),
+        [new(-12.07,-77.03),new(-12.13,-76.98)],Guid.NewGuid());
+    await db.Database.ExecuteSqlRawAsync("CREATE TRIGGER fail_trip_audit BEFORE INSERT ON activity_records FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='intentional trip audit failure'");
+    var failed=false;
+    try {await TripService(db).DepartAsync(weighingDispatchId,tripPlan,"Integration Check","company",default);}
+    catch(DbUpdateException){failed=true;}
+    finally{await db.Database.ExecuteSqlRawAsync("DROP TRIGGER fail_trip_audit");}
+    if(!failed)throw new Exception("Departure audit failure did not roll back.");
+}
+int controlledRouteId;
+using(var db=new AppDbContext(options))
+{
+    if(await db.Set<TransitRoute>().CountAsync()!=1 || await db.Set<VigiaPlatform.API.TransitTraceability.Domain.Model.Entities.DispatchTrip>().AnyAsync() ||
+        await db.Set<Dispatch>().Where(d=>d.Id==weighingDispatchId).Select(d=>d.Status).SingleAsync()!=DispatchStatus.InPreparation ||
+        (await db.Vehicles.SingleAsync()).PositionVersion!=tripVehicleVersion)throw new Exception("Failed departure left partial reservation, route or dispatch state.");
+    controlledRouteId=(await TripService(db).DepartAsync(weighingDispatchId,tripPlan,"Integration Check","company",default)).Id;
+}
+var gpsTime=DateTimeOffset.UtcNow;
+using(var db=new AppDbContext(options))
+{
+    await db.Database.ExecuteSqlRawAsync("CREATE TRIGGER fail_gps_audit BEFORE INSERT ON activity_records FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='intentional GPS audit failure'");
+    var failed=false;
+    try {await TripService(db).ReportAsync("GPS-ATOMIC-TRIP",-12.08,-77.03,gpsTime,20,"company",default);}
+    catch(DbUpdateException){failed=true;}
+    finally {await db.Database.ExecuteSqlRawAsync("DROP TRIGGER fail_gps_audit");}
+    if(!failed)throw new Exception("GPS audit failure did not roll back.");
+}
+using(var db=new AppDbContext(options))
+{
+    if(await db.Set<VigiaPlatform.API.TransitTraceability.Domain.Model.Entities.TelemetryPosition>().AnyAsync(p=>p.RouteId==controlledRouteId) ||
+       (await db.Vehicles.SingleAsync()).CurrentPos is not null)throw new Exception("Failed GPS audit left partial route or vehicle position.");
+    await TripService(db).ReportAsync("GPS-ATOMIC-TRIP",-12.08,-77.03,gpsTime,20,"company",default);
+}
+using(var first=new AppDbContext(options))
+using(var stale=new AppDbContext(options))
+{
+    var vehicle=await first.Vehicles.SingleAsync();var staleVehicle=await stale.Vehicles.SingleAsync();
+    vehicle.UpdatePosition(new(-12.081,-77.03),gpsTime.AddSeconds(1));await first.SaveChangesAsync();
+    staleVehicle.UpdatePosition(new(-12.082,-77.03),gpsTime.AddSeconds(2));
+    var failed=false;try {await stale.SaveChangesAsync();}catch(DbUpdateConcurrencyException){failed=true;}
+    if(!failed)throw new Exception("Stale GPS vehicle position overwrote a committed report.");
+}
+Console.WriteLine("PASS: departure and GPS audit failures roll back all business changes; successful retry and stale-position concurrency protection verified.");

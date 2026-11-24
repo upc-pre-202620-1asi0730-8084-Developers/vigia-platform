@@ -1,6 +1,6 @@
 namespace VigiaPlatform.API.TransitTraceability.Interfaces.REST.Resources;
 
-public record GeoPointResource(double Latitude, double Longitude);
+public record GeoPointResource([property:System.Text.Json.Serialization.JsonRequired] double Latitude, [property:System.Text.Json.Serialization.JsonRequired] double Longitude);
 
 public record DestinationResource(string Name, double Latitude, double Longitude, double RadiusMeters);
 
@@ -31,7 +31,8 @@ public record RouteResource(
     DateTimeOffset EstimatedArrival,
     DateTimeOffset? ArrivedAt,
     double DeviationThresholdMeters,
-    int StopThresholdMinutes);
+    int StopThresholdMinutes,
+    string TrackingSource, bool TrackingActive, string? GpsDeviceId, Guid? DepartureRequestId);
 
 /// <summary>Route after a tracking command, with the alerts that command raised.</summary>
 public record TransitOutcomeResource(RouteResource Route, IEnumerable<TransitAlertResource> RaisedAlerts);

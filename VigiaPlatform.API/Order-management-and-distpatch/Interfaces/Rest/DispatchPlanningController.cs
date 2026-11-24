@@ -24,5 +24,5 @@ public class DispatchPlanningController(DispatchPlanningService service) : Contr
 public class UpcomingArrivalsController(DispatchPlanningService service) : ControllerBase
 {
     [HttpGet]
-    public async Task<IActionResult> Get(CancellationToken ct) => Ok(await service.UpcomingAsync(ct));
+    public async Task<IActionResult> Get(CancellationToken ct) => Ok(await service.UpcomingAsync(ct,User.IsInRole("ADMIN") ? null : User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? ""));
 }

@@ -16,7 +16,7 @@ namespace VigiaPlatform.API.TransitTraceability.Interfaces.REST.Controllers;
 [ApiController]
 [Route("api/v1/[controller]")]
 [Produces(MediaTypeNames.Application.Json)]
-public class RoutesController(IRouteCommandService commandService, IRouteQueryService queryService) : ControllerBase
+public class RoutesController(IRouteCommandService commandService, IRouteQueryService queryService, VigiaPlatform.API.TransitTraceability.Infrastructure.Integration.DispatchTransitService trips) : ControllerBase
 {
     /// <summary>Lists the tracked routes, optionally filtered by status (IN_TRANSIT, DEVIATED, STOPPED, SIGNAL_LOST, ARRIVED).</summary>
     [HttpGet]
@@ -33,6 +33,10 @@ public class RoutesController(IRouteCommandService commandService, IRouteQuerySe
         }
 
         var routes = await queryService.Handle(new GetAllRoutesQuery(filter), cancellationToken);
+        if(User.IsInRole("SITE_MANAGER") && !User.IsInRole("ADMIN") && !User.IsInRole("WAREHOUSE_MANAGER")) {
+            var visible=await trips.VisibleDispatchIdsAsync(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value??"",cancellationToken);
+            routes=routes.Where(r=>visible.Contains(r.DispatchId));
+        }
         return Ok(routes.Select(RouteResourceFromEntityAssembler.ToResourceFromEntity));
     }
 
@@ -43,7 +47,7 @@ public class RoutesController(IRouteCommandService commandService, IRouteQuerySe
     public async Task<IActionResult> GetRouteById(int routeId, CancellationToken cancellationToken)
     {
         var route = await queryService.Handle(new GetRouteByIdQuery(routeId), cancellationToken);
-        return route is null
+        return route is null || !await CanReadAsync(route.DispatchId,cancellationToken)
             ? NotFound(new ErrorResource(TransitTraceabilityErrorCodes.RouteNotFound, $"Route {routeId} not found."))
             : Ok(RouteResourceFromEntityAssembler.ToResourceFromEntity(route));
     }
@@ -55,26 +59,25 @@ public class RoutesController(IRouteCommandService commandService, IRouteQuerySe
     public async Task<IActionResult> GetRouteAlerts(int routeId, CancellationToken cancellationToken)
     {
         var route = await queryService.Handle(new GetRouteByIdQuery(routeId), cancellationToken);
-        return route is null
+        return route is null || !await CanReadAsync(route.DispatchId,cancellationToken)
             ? NotFound(new ErrorResource(TransitTraceabilityErrorCodes.RouteNotFound, $"Route {routeId} not found."))
             : Ok(route.Alerts.Select(TransitAlertResourceFromEntityAssembler.ToResourceFromEntity));
     }
 
     /// <summary>Starts tracking the route of a dispatch.</summary>
+    [Microsoft.AspNetCore.Authorization.Authorize(Roles="ADMIN,WAREHOUSE_MANAGER")]
     [HttpPost]
     [ProducesResponseType(typeof(RouteResource), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ErrorResource), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResource), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> CreateRoute([FromBody] CreateRouteResource resource, CancellationToken cancellationToken)
     {
-        var result = await commandService.Handle(CreateRouteCommandFromResourceAssembler.ToCommandFromResource(resource), cancellationToken);
-        return result.Fold<IActionResult>(
-            route => CreatedAtAction(nameof(GetRouteById), new { routeId = route.Id },
-                RouteResourceFromEntityAssembler.ToResourceFromEntity(route)),
-            ToErrorResult);
+        await Task.CompletedTask;
+        return Conflict(new ErrorResource("START_TRIP_REQUIRED","Use the dispatch departure endpoint to start an authorized trip atomically."));
     }
 
     /// <summary>Registers a GPS position reported by the telemetry platform and returns the alerts it raised.</summary>
+    [Microsoft.AspNetCore.Authorization.Authorize(Roles="ADMIN,WAREHOUSE_MANAGER")]
     [HttpPost("{routeId:int}/positions")]
     [ProducesResponseType(typeof(TransitOutcomeResource), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResource), StatusCodes.Status400BadRequest)]
@@ -89,6 +92,7 @@ public class RoutesController(IRouteCommandService commandService, IRouteQuerySe
     }
 
     /// <summary>Registers that the GPS device of the route stopped reporting.</summary>
+    [Microsoft.AspNetCore.Authorization.Authorize(Roles="ADMIN,WAREHOUSE_MANAGER")]
     [HttpPost("{routeId:int}/signal-lost")]
     [ProducesResponseType(typeof(TransitOutcomeResource), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResource), StatusCodes.Status404NotFound)]
@@ -102,6 +106,7 @@ public class RoutesController(IRouteCommandService commandService, IRouteQuerySe
     }
 
     /// <summary>Marks a deviation or prolonged-stop alert as notified to the destination site.</summary>
+    [Microsoft.AspNetCore.Authorization.Authorize(Roles="ADMIN,WAREHOUSE_MANAGER")]
     [HttpPost("{routeId:int}/alerts/{alertId:int}/notify")]
     [ProducesResponseType(typeof(TransitAlertResource), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResource), StatusCodes.Status404NotFound)]
@@ -114,6 +119,10 @@ public class RoutesController(IRouteCommandService commandService, IRouteQuerySe
             ToErrorResult);
     }
 
+    private async Task<bool> CanReadAsync(string dispatchId,CancellationToken ct) =>
+        !User.IsInRole("SITE_MANAGER") || User.IsInRole("ADMIN") || User.IsInRole("WAREHOUSE_MANAGER") ||
+        (await trips.VisibleDispatchIdsAsync(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value??"",ct)).Contains(dispatchId);
+
     private ObjectResult ToErrorResult(TransitTraceabilityError error)
     {
         var body = new ErrorResource(error.Code, error.Message);
@@ -123,7 +132,7 @@ public class RoutesController(IRouteCommandService commandService, IRouteQuerySe
             TransitTraceabilityErrorCodes.RouteAlreadyArrived
                 or TransitTraceabilityErrorCodes.SignalAlreadyLost
                 or TransitTraceabilityErrorCodes.DispatchAlreadyTracked
-                or TransitTraceabilityErrorCodes.AlertNotNotifiable => Conflict(body),
+                or TransitTraceabilityErrorCodes.AlertNotNotifiable or "DEVICE_REPORT_REQUIRED" or "CONCURRENT_TRIP_CHANGE" => Conflict(body),
             _ => BadRequest(body)
         };
     }

@@ -22,6 +22,11 @@ public class Vehicle : IAuditableEntity
     public string? GpsDeviceId { get; private set; }
     public Location? CurrentPos { get; private set; }
 
+    public DateTimeOffset? PositionReportedAt { get; private set; }
+    public long PositionVersion { get; private set; }
+
+    public void ReserveTracking() => PositionVersion++;
+
     public bool IsGpsPaired => !string.IsNullOrWhiteSpace(GpsDeviceId);
 
     public DateTimeOffset? CreatedAt { get; set; }
@@ -68,6 +73,8 @@ public class Vehicle : IAuditableEntity
 
         GpsDeviceId = normalizedId;
         CurrentPos = null;
+        PositionReportedAt = null;
+        PositionVersion++;
     }
 
     /// <summary>
@@ -77,13 +84,17 @@ public class Vehicle : IAuditableEntity
     {
         GpsDeviceId = null;
         CurrentPos = null;
+        PositionReportedAt = null;
+        PositionVersion++;
     }
 
     /// <summary>
     /// Updates the current telemetry position of the vehicle (Location WGS84).
     /// </summary>
-    public void UpdatePosition(Location location)
+    public void UpdatePosition(Location location, DateTimeOffset? reportedAt = null)
     {
+        PositionReportedAt = reportedAt ?? DateTimeOffset.UtcNow;
+        PositionVersion++;
         CurrentPos = location ?? throw new FleetException(FleetErrorCodes.InvalidCoordinates, "Position location cannot be null.");
     }
 }

@@ -52,7 +52,7 @@ public static class RouteResourceFromEntityAssembler
             entity.EstimatedArrival,
             entity.ArrivedAt,
             entity.DeviationThresholdMeters,
-            entity.StopThresholdMinutes);
+            entity.StopThresholdMinutes,entity.Trip is null ? "LEGACY" : "DEVICE",entity.IsActive,entity.Trip?.GpsDeviceId,entity.Trip?.RequestId);
 }
 
 public static class TransitOutcomeResourceFromEntityAssembler

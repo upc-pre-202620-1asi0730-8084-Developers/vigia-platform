@@ -1,3 +1,4 @@
+from local_trip_fixture import fresh_vehicle, depart
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 import datetime as dt
@@ -42,7 +43,7 @@ tokens = {role: request('POST', '/authentication/sign-in', {'username': role+'.l
           for role in ('site', 'warehouse', 'admin')}
 site, warehouse, admin = (tokens[role] for role in ('site', 'warehouse', 'admin'))
 approved = next(order for order in request('GET', '/orders', token=warehouse) if order['status'] == 'APPROVED')
-vehicle = request('GET', '/vehicles', token=warehouse)[0]
+vehicle = fresh_vehicle(request, warehouse)
 plan = {'projectName': approved['projectName'], 'relatedOrderId': str(approved['id']),
         'departureDate': dt.datetime.now(dt.timezone.utc).date().isoformat(), 'estimatedTime': '18:00',
         'dispatchType': 'DEPARTURE_TO_WORK', 'priority': 'AVERAGE'}
@@ -100,7 +101,7 @@ request('PUT',path+'/vehicle',{'vehicleId':vehicle['id'],'vehiclePlate':vehicle[
 request('POST',path+'/weighing',{**weigh_body,'requestId':str(uuid.uuid4())},warehouse,409)
 assert request('POST',path+'/weighing',weigh_body,warehouse,201)['id'] == weighing['id']
 request('PATCH',path+'/status',{'status':'IN_TRANSIT','performedBy':'Spoofed actor'},site,403)
-departed = request('PATCH',path+'/status',{'status':'IN_TRANSIT','performedBy':'Spoofed actor'},warehouse)
+departed = depart(request,path,warehouse)
 assert departed['status'] == 'IN_TRANSIT' and not departed['canDepart'] and departed['isAuthorized']
 arrival = next(item for item in request('GET','/upcoming-arrivals',token=site) if str(item['dispatchId']) == str(dispatch['id']))
 assert arrival['deliveryGuideNumber'] == guide['guideNumber'] and arrival['driverName'] == 'Local Driver'

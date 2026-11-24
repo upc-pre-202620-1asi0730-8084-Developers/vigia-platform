@@ -12,7 +12,7 @@ namespace VigiaPlatform.API.Order_management_and_distpatch.Application.Internal.
 
 public class DispatchCommandService(
     IDispatchRepository dispatchRepository,
-    IUnitOfWork unitOfWork) : IDispatchCommandService
+    IUnitOfWork unitOfWork, VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCore.Configuration.AppDbContext db) : IDispatchCommandService
 {
     public async Task<Result<Dispatch, DispatchError>> Handle(CreateDispatchCommand command,
         CancellationToken cancellationToken = default)
@@ -69,6 +69,7 @@ public class DispatchCommandService(
     public async Task<Result<Dispatch, DispatchError>> Handle(ChangeDispatchStatusCommand command,
         CancellationToken cancellationToken = default)
     {
+        if (command.NewStatus == DispatchStatus.InTransit) return Failure(DispatchError.InvalidStatusTransition);
         return await ModifyAsync(command.DispatchId, requireEditable: false, cancellationToken,
             dispatch => dispatch.ChangeStatus(command.NewStatus, command.PerformedBy, command.Description,
                 DateTime.UtcNow),
@@ -118,6 +119,11 @@ public class DispatchCommandService(
                 return Failure(invalidOperationError);
             }
 
+            if (dispatch.Status is DispatchStatus.Completed or DispatchStatus.Cancelled)
+            {
+                var trip = await db.Set<VigiaPlatform.API.TransitTraceability.Domain.Model.Entities.DispatchTrip>().Include(t => t.Route).SingleOrDefaultAsync(t => t.DispatchId == dispatch.Id,cancellationToken);
+                if(trip?.ActiveVehicleId is not null) { trip.End("DISPATCH_CLOSED",DateTimeOffset.UtcNow); trip.Route.CloseTracking(); }
+            }
             dispatchRepository.Update(dispatch);
             await unitOfWork.CompleteAsync(cancellationToken);
             return Success(dispatch);

@@ -17,6 +17,7 @@ public class TransitRouteConfiguration : IEntityTypeConfiguration<TransitRoute>
         builder.HasKey(r => r.Id);
         builder.Property(r => r.Id).ValueGeneratedOnAdd();
 
+        builder.Property(r => r.Version).IsConcurrencyToken();
         builder.Property(r => r.DispatchId).IsRequired().HasMaxLength(40);
         builder.HasIndex(r => r.DispatchId).IsUnique().HasDatabaseName("uq_routes_dispatch_id");
         builder.Property(r => r.VehicleId).IsRequired();
@@ -24,8 +25,9 @@ public class TransitRouteConfiguration : IEntityTypeConfiguration<TransitRoute>
         builder.Property(r => r.OriginName).IsRequired().HasMaxLength(150);
         builder.Property(r => r.DestinationGeofenceId).IsRequired();
         builder.Property(r => r.Status).IsRequired().HasConversion<string>().HasMaxLength(20);
-        builder.Property(r => r.StartedAt).IsRequired();
-        builder.Property(r => r.EstimatedArrival).IsRequired();
+        builder.Property(r => r.StartedAt).HasConversion(new VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCore.Configuration.UtcTimestampConverter()).HasColumnType("datetime(6)").HasPrecision(6).IsRequired();
+        builder.Property(r => r.ArrivedAt).HasConversion(new VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCore.Configuration.UtcTimestampConverter()).HasColumnType("datetime(6)").HasPrecision(6);
+        builder.Property(r => r.EstimatedArrival).HasConversion(new VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCore.Configuration.UtcTimestampConverter()).HasColumnType("datetime(6)").HasPrecision(6).IsRequired();
         builder.Property(r => r.DeviationThresholdMeters).IsRequired();
         builder.Property(r => r.StopThresholdMinutes).IsRequired();
 
@@ -79,7 +81,7 @@ public class TelemetryPositionConfiguration : IEntityTypeConfiguration<Telemetry
         builder.Property(p => p.Latitude).IsRequired();
         builder.Property(p => p.Longitude).IsRequired();
         builder.Property(p => p.SpeedKmh).IsRequired();
-        builder.Property(p => p.ReportedAt).IsRequired();
+        builder.Property(p => p.ReportedAt).HasConversion(new VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCore.Configuration.UtcTimestampConverter()).HasColumnType("datetime(6)").HasPrecision(6).IsRequired();
         builder.HasIndex(p => new { p.RouteId, p.ReportedAt }).HasDatabaseName("ix_telemetry_positions_route_id_reported_at");
         builder.Ignore(p => p.Point);
     }
@@ -94,11 +96,11 @@ public class TransitAlertConfiguration : IEntityTypeConfiguration<TransitAlert>
         builder.Property(a => a.Id).ValueGeneratedOnAdd();
         builder.Property(a => a.RouteId).IsRequired();
         builder.Property(a => a.Type).IsRequired().HasConversion<string>().HasMaxLength(20);
-        builder.Property(a => a.DetectedAt).IsRequired();
+        builder.Property(a => a.DetectedAt).HasConversion(new VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCore.Configuration.UtcTimestampConverter()).HasColumnType("datetime(6)").HasPrecision(6).IsRequired();
         builder.Property(a => a.Latitude);
         builder.Property(a => a.Longitude);
         builder.Property(a => a.Value);
-        builder.Property(a => a.NotifiedAt);
+        builder.Property(a => a.NotifiedAt).HasConversion(new VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCore.Configuration.UtcTimestampConverter()).HasColumnType("datetime(6)").HasPrecision(6);
         builder.Ignore(a => a.RequiresNotification);
         builder.Ignore(a => a.IsPendingNotification);
     }

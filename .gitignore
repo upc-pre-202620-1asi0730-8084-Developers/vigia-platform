@@ -12,3 +12,6 @@ deploy/azure/.env
 
 # Datos temporales de órdenes
 VigiaPlatform.API/Order-management-and-distpatch/Domain/Model/ValueObjects/temporaly_orders.json
+
+__pycache__/
+*.pyc
