@@ -7,6 +7,7 @@ namespace VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Exceptions;
 public class FleetException : Exception
 {
     public string Code { get; }
+    public string? AssignedLicensePlate { get; init; }
 
     public FleetException(string code, string message) : base(message)
     {

@@ -29,20 +29,20 @@ public class Geofence : IAuditableEntity
     /// </summary>
     public Geofence(string companyId, string siteId, string name, GeofenceType type, Location centerPoint, double radiusMeters = 100.0)
     {
-        if (string.IsNullOrWhiteSpace(companyId))
-            throw new FleetException(FleetErrorCodes.InvalidGeofence, "Company identifier is required.");
-        if (string.IsNullOrWhiteSpace(siteId))
-            throw new FleetException(FleetErrorCodes.InvalidGeofence, "Site identifier (warehouse or job site) is required.");
-        if (string.IsNullOrWhiteSpace(name))
-            throw new FleetException(FleetErrorCodes.InvalidGeofence, "Geofence name is required.");
-        if (radiusMeters < 10.0 || radiusMeters > 50000.0)
+        if (string.IsNullOrWhiteSpace(companyId) || companyId.Trim().Length > 64 || companyId.Any(char.IsControl))
+            throw new FleetException(FleetErrorCodes.InvalidGeofence, "Company identifier is required, up to 64 characters without control characters.");
+        if (string.IsNullOrWhiteSpace(siteId) || siteId.Trim().Length > 64 || siteId.Any(char.IsControl))
+            throw new FleetException(FleetErrorCodes.InvalidGeofence, "Site identifier is required, up to 64 characters without control characters.");
+        if (string.IsNullOrWhiteSpace(name) || name.Trim().Length > 150 || name.Any(char.IsControl))
+            throw new FleetException(FleetErrorCodes.InvalidGeofence, "Geofence name is required, up to 150 characters without control characters.");
+        if (!double.IsFinite(radiusMeters) || radiusMeters < 10.0 || radiusMeters > 50000.0)
             throw new FleetException(FleetErrorCodes.InvalidRadius,
                 $"Geofence radius must be between 10 and 50,000 meters. Received: {radiusMeters}");
 
         CompanyId = companyId.Trim();
         SiteId = siteId.Trim();
         Name = name.Trim();
-        Type = type;
+        Type = Enum.IsDefined(type) ? type : throw new FleetException(FleetErrorCodes.InvalidGeofence, "Unknown geofence type.");
         CenterPoint = centerPoint ?? throw new FleetException(FleetErrorCodes.InvalidCoordinates, "Center point is required.");
         RadiusMeters = Math.Round(radiusMeters, 2);
     }
@@ -59,7 +59,7 @@ public class Geofence : IAuditableEntity
 
     public void UpdateBoundary(Location centerPoint, double radiusMeters)
     {
-        if (radiusMeters < 10.0 || radiusMeters > 50000.0)
+        if (!double.IsFinite(radiusMeters) || radiusMeters < 10.0 || radiusMeters > 50000.0)
             throw new FleetException(FleetErrorCodes.InvalidRadius, "Invalid geofence radius.");
 
         CenterPoint = centerPoint ?? throw new FleetException(FleetErrorCodes.InvalidCoordinates, "Center point is required.");

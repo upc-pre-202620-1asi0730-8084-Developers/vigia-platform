@@ -7,7 +7,7 @@ using VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Model.ValueObjects;
 using VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCore.Configuration;
 using VigiaPlatform.API.Shared.Domain.Repositories;
 
-public record TelemetryReport(string GpsDeviceId, double Latitude, double Longitude, DateTimeOffset? Timestamp);
+public record TelemetryReport(string GpsDeviceId, [property: System.Text.Json.Serialization.JsonRequired] double Latitude, [property: System.Text.Json.Serialization.JsonRequired] double Longitude, DateTimeOffset? Timestamp);
 
 [ApiController]
 [Route("api/v1/telemetry/reports")]

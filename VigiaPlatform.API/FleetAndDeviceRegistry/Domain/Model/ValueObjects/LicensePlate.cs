@@ -19,9 +19,9 @@ public partial record LicensePlate
             throw new FleetException(FleetErrorCodes.InvalidLicensePlate, "License plate cannot be empty.");
 
         var normalized = Normalize(value);
-        if (normalized.Length < 5 || normalized.Length > 12)
+        if (normalized.Length < 5 || normalized.Length > 12 || !Regex.IsMatch(normalized, @"^[A-Z0-9]+(?:-[A-Z0-9]+)*$"))
             throw new FleetException(FleetErrorCodes.InvalidLicensePlate,
-                $"License plate '{value}' is invalid. Must contain between 5 and 12 alphanumeric characters.");
+                $"License plate '{value}' is invalid. Use 5 to 12 letters/digits with optional separating hyphens.");
 
         Value = normalized;
     }

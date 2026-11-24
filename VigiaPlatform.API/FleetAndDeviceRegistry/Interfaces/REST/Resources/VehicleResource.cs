@@ -1,8 +1,8 @@
 namespace VigiaPlatform.API.FleetAndDeviceRegistry.Interfaces.REST.Resources;
 
 public record LocationResource(
-    double Latitude,
-    double Longitude
+    [property: System.Text.Json.Serialization.JsonRequired] double Latitude,
+    [property: System.Text.Json.Serialization.JsonRequired] double Longitude
 );
 
 public record VehicleResource(

@@ -14,9 +14,9 @@ public record VehicleCapacity
 
     public VehicleCapacity(double tons)
     {
-        if (double.IsNaN(tons) || tons <= 0)
+        if (!double.IsFinite(tons) || Math.Round(tons, 2) <= 0)
             throw new FleetException(FleetErrorCodes.InvalidCapacity,
-                $"Vehicle capacity must be greater than zero. Received: {tons} tons.");
+                $"Vehicle capacity must be finite and positive at two-decimal precision. Received: {tons} tons.");
 
         if (tons > 150)
             throw new FleetException(FleetErrorCodes.InvalidCapacity,

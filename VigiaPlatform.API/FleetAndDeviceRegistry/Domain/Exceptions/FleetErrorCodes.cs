@@ -10,6 +10,8 @@ public static class FleetErrorCodes
     public const string InvalidCapacity = "FLEET_INVALID_CAPACITY";
     public const string InvalidGpsDevice = "FLEET_INVALID_GPS_DEVICE";
     public const string DeviceAlreadyAssigned = "FLEET_DEVICE_ALREADY_ASSIGNED";
+    public const string SiteAlreadyHasGeofence = "FLEET_SITE_ALREADY_HAS_GEOFENCE";
+    public const string ConcurrentModification = "FLEET_CONCURRENT_MODIFICATION";
     public const string InvalidGeofence = "FLEET_INVALID_GEOFENCE";
     public const string InvalidCoordinates = "FLEET_INVALID_COORDINATES";
     public const string InvalidRadius = "FLEET_INVALID_RADIUS";

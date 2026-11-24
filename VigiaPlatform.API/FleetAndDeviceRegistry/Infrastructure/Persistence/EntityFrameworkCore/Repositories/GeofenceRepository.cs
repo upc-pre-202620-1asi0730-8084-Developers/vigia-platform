@@ -1,6 +1,7 @@
 namespace VigiaPlatform.API.FleetAndDeviceRegistry.Infrastructure.Persistence.EntityFrameworkCore.Repositories;
 
 using Microsoft.EntityFrameworkCore;
+using VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Model.Entities;
 using VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Model.Aggregates;
 using VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Model.ValueObjects;
 using VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Repositories;
@@ -9,6 +10,15 @@ using VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCore.Re
 
 public class GeofenceRepository(AppDbContext context) : BaseRepository<Geofence>(context), IGeofenceRepository
 {
+    public async Task<Geofence?> FindByCompanyAndSiteAsync(string companyId, string siteId, CancellationToken cancellationToken = default) =>
+        await Context.Set<Geofence>().FirstOrDefaultAsync(g => g.CompanyId == companyId.Trim() && g.SiteId == siteId.Trim(), cancellationToken);
+
+    public async Task AddForSiteAsync(Geofence geofence, CancellationToken cancellationToken = default)
+    {
+        await Context.Set<Geofence>().AddAsync(geofence, cancellationToken);
+        await Context.Set<GeofenceSiteRegistration>().AddAsync(new GeofenceSiteRegistration(geofence), cancellationToken);
+    }
+
     public async Task<Geofence?> FindBySiteIdAsync(string siteId, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(siteId)) return null;
