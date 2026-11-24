@@ -63,6 +63,7 @@ builder.Services.AddProblemDetails();
 builder.Services.AddScoped<VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Infrastructure.Reporting.DiscrepancyReportService>();
 builder.Services.AddScoped<VigiaPlatform.API.SiteReceptionAndVerification.Infrastructure.Integration.PhysicalReceptionService>();
 builder.Services.AddScoped<VigiaPlatform.API.Order_management_and_distpatch.Infrastructure.Integration.DispatchPlanningService>();
+builder.Services.AddScoped<VigiaPlatform.API.Order_management_and_distpatch.Infrastructure.Integration.ResidentOrderService>();
 
 builder.Services.AddCors(options => options.AddPolicy(
     FrontendCorsPolicy, policy => policy

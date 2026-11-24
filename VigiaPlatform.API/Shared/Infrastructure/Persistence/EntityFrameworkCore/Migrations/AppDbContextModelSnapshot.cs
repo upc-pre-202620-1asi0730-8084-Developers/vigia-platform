@@ -664,6 +664,10 @@ namespace VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCor
                         .HasColumnType("varchar(100)")
                         .HasColumnName("project_name");
 
+                    b.Property<int?>("RequesterAccountId")
+                        .HasColumnType("int")
+                        .HasColumnName("requester_account_id");
+
                     b.Property<string>("RequesterName")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -686,6 +690,9 @@ namespace VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCor
                     b.HasIndex("Code")
                         .IsUnique()
                         .HasDatabaseName("ix_orders_code");
+
+                    b.HasIndex("RequesterAccountId")
+                        .HasDatabaseName("ix_orders_requester_account_id");
 
                     b.HasIndex("Status")
                         .HasDatabaseName("ix_orders_status");

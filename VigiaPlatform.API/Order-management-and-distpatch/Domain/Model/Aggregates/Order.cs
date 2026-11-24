@@ -15,6 +15,7 @@ public partial class Order
     private readonly List<OrderTimelineEvent> _timeline = [];
 
     public int Id { get; private set; }
+    public int? RequesterAccountId { get; private set; }
     public OrderCode Code { get; private set; } = null!;
     public ProjectName ProjectName { get; private set; } = null!;
     public OrderRequesterName RequesterName { get; private set; } = null!;
@@ -33,8 +34,10 @@ public partial class Order
     {
     }
 
-    public Order(CreateOrderCommand command, DateTime createdAt)
+    public Order(CreateOrderCommand command, DateTime createdAt, int? requesterAccountId = null)
     {
+        if (requesterAccountId is <= 0) throw new ArgumentException("A valid requester account is required.");
+        RequesterAccountId = requesterAccountId;
         if (command.Items is null || command.Items.Count == 0)
             throw new ArgumentException("An order must contain at least one item", nameof(command));
 
