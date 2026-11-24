@@ -14,8 +14,8 @@ public record PairGpsDeviceResource(
 );
 
 public record UpdateVehiclePositionResource(
-    double Latitude,
-    double Longitude
+    [property: System.Text.Json.Serialization.JsonRequired] double Latitude,
+    [property: System.Text.Json.Serialization.JsonRequired] double Longitude
 );
 
 public record DefineGeofenceResource(

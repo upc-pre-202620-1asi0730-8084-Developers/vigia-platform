@@ -275,6 +275,31 @@ namespace VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCor
                     b.ToTable("vehicles");
                 });
 
+            modelBuilder.Entity("VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Model.Entities.GeofenceSiteRegistration", b =>
+                {
+                    b.Property<string>("CompanyId")
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("company_id");
+
+                    b.Property<string>("SiteId")
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("site_id");
+
+                    b.Property<int>("GeofenceId")
+                        .HasColumnType("int")
+                        .HasColumnName("geofence_id");
+
+                    b.HasKey("CompanyId", "SiteId")
+                        .HasName("pk_geofence_site_registrations");
+
+                    b.HasIndex("GeofenceId")
+                        .HasDatabaseName("ix_geofence_site_registrations_geofence_id");
+
+                    b.ToTable("geofence_site_registrations", (string)null);
+                });
+
             modelBuilder.Entity("VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Model.Entities.UnassociatedTelemetryEvent", b =>
                 {
                     b.Property<int>("Id")
@@ -1700,6 +1725,18 @@ namespace VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCor
 
                     b.Navigation("MaxCapacityTons")
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Model.Entities.GeofenceSiteRegistration", b =>
+                {
+                    b.HasOne("VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Model.Aggregates.Geofence", "Geofence")
+                        .WithMany()
+                        .HasForeignKey("GeofenceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_geofence_site_registrations_geofences_geofence_id");
+
+                    b.Navigation("Geofence");
                 });
 
             modelBuilder.Entity("VigiaPlatform.API.InventoryManagement.Domain.Model.InventoryMovement", b =>

@@ -23,3 +23,7 @@ Eight checks against the actual C# domain source covered center, inside/outside 
 | F10-07 | The geofence domain accepts a `NaN` radius when called directly. Ordinary JSON cannot submit this literal. | Row 11: enforce finite domain values for internal callers as well as HTTP validation. |
 
 The circle model is already implemented. Completing this review does not complete the corrections or US-19/TS-08 acceptance. Keep product tracking partial until the affected rows are implemented and tested. Production backup, release and Azure verification remain in the release schedule.
+
+## Row 11 implementation
+
+F10-01/02/03/07 are addressed: project catalog instead of demonstration IDs, warehouse code/name entry, atomic company/site registration, consistent radius and length validation, and finite domain values. F10-04 is also addressed by requiring both telemetry coordinates. The additive registry migration preserves historical duplicate geofences. F10-05/06 remain in row 12: device timestamp ordering and active dispatch/route association.

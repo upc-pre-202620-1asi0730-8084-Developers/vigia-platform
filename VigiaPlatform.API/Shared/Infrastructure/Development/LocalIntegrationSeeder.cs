@@ -57,8 +57,10 @@ public static class LocalIntegrationSeeder
         }
         if (!await db.Geofences.AnyAsync())
         {
-            db.Add(new Geofence("vigia", "warehouse-local", "Local Warehouse", GeofenceType.Warehouse, new Location(-12.08, -77.03), 150));
-            db.Add(new Geofence("vigia", project.Id.ToString(), project.Name, GeofenceType.JobSite, new Location(-12.13, -76.98), 150));
+            var warehouseFence = new Geofence("vigia", "warehouse-local", "Local Warehouse", GeofenceType.Warehouse, new Location(-12.08, -77.03), 150);
+            db.Add(new VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Model.Entities.GeofenceSiteRegistration(warehouseFence));
+            var jobFence = new Geofence("vigia", project.Id.ToString(), project.Name, GeofenceType.JobSite, new Location(-12.13, -76.98), 150);
+            db.Add(new VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Model.Entities.GeofenceSiteRegistration(jobFence));
             await unitOfWork.CompleteAsync();
         }
         if (!await db.Set<Material>().AnyAsync())

@@ -13,8 +13,8 @@ public record GpsDeviceId
 
     public GpsDeviceId(string value)
     {
-        if (string.IsNullOrWhiteSpace(value))
-            throw new FleetException(FleetErrorCodes.InvalidGpsDevice, "GPS device ID cannot be empty or whitespace.");
+        if (string.IsNullOrWhiteSpace(value) || value.Trim().ToUpperInvariant().Length > 64 || value.Any(char.IsControl))
+            throw new FleetException(FleetErrorCodes.InvalidGpsDevice, "GPS device ID must contain 1 to 64 characters without control characters.");
 
         Value = value.Trim().ToUpperInvariant();
     }

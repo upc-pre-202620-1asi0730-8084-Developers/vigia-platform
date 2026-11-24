@@ -34,12 +34,12 @@ public class Vehicle : IAuditableEntity
     /// </summary>
     public Vehicle(string companyId, LicensePlate licensePlate, string brand, string model, VehicleCapacity maxCapacityTons, string? gpsDeviceId = null)
     {
-        if (string.IsNullOrWhiteSpace(companyId))
-            throw new FleetException(FleetErrorCodes.InvalidVehicleData, "Company identifier is required.");
-        if (string.IsNullOrWhiteSpace(brand))
-            throw new FleetException(FleetErrorCodes.InvalidVehicleData, "Vehicle brand is required.");
-        if (string.IsNullOrWhiteSpace(model))
-            throw new FleetException(FleetErrorCodes.InvalidVehicleData, "Vehicle model is required.");
+        if (string.IsNullOrWhiteSpace(companyId) || companyId.Trim().Length > 64 || companyId.Any(char.IsControl))
+            throw new FleetException(FleetErrorCodes.InvalidVehicleData, "Company identifier is required, up to 64 characters without control characters.");
+        if (string.IsNullOrWhiteSpace(brand) || brand.Trim().Length > 100 || brand.Any(char.IsControl))
+            throw new FleetException(FleetErrorCodes.InvalidVehicleData, "Vehicle brand is required, up to 100 characters without control characters.");
+        if (string.IsNullOrWhiteSpace(model) || model.Trim().Length > 100 || model.Any(char.IsControl))
+            throw new FleetException(FleetErrorCodes.InvalidVehicleData, "Vehicle model is required, up to 100 characters without control characters.");
 
         CompanyId = companyId.Trim();
         LicensePlate = licensePlate ?? throw new FleetException(FleetErrorCodes.InvalidLicensePlate, "License plate is required.");
@@ -62,11 +62,12 @@ public class Vehicle : IAuditableEntity
         if (string.IsNullOrWhiteSpace(deviceId))
             throw new FleetException(FleetErrorCodes.InvalidGpsDevice, "GPS Device ID cannot be empty.");
 
-        var normalizedId = deviceId.Trim().ToUpperInvariant();
+        var normalizedId = new GpsDeviceId(deviceId).Value;
         if (IsGpsPaired && GpsDeviceId == normalizedId)
             return; // Idempotent if same device
 
         GpsDeviceId = normalizedId;
+        CurrentPos = null;
     }
 
     /// <summary>
@@ -75,6 +76,7 @@ public class Vehicle : IAuditableEntity
     public void UnpairGpsDevice()
     {
         GpsDeviceId = null;
+        CurrentPos = null;
     }
 
     /// <summary>

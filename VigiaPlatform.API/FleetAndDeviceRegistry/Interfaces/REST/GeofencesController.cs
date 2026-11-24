@@ -64,6 +64,7 @@ public class GeofencesController(
     [HttpPost]
     [ProducesResponseType(typeof(GeofenceResource), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> DefineGeofence([FromBody] DefineGeofenceResource resource, CancellationToken cancellationToken)
     {
         try
@@ -77,7 +78,9 @@ public class GeofencesController(
         }
         catch (FleetException ex)
         {
-            return BadRequest(new { code = ex.Code, message = ex.Message });
+            return ex.Code is FleetErrorCodes.SiteAlreadyHasGeofence or FleetErrorCodes.ConcurrentModification
+                ? Conflict(new { code = ex.Code, message = ex.Message })
+                : BadRequest(new { code = ex.Code, message = ex.Message });
         }
     }
 }

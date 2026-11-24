@@ -20,3 +20,7 @@ Five diagnostic input requests exposed defects. A separate seven-request concurr
 | F9-06 | Replacing a GPS retains the previous device's position. Coordinate replacement semantics with the telemetry review in row 10. | HTTP and `Vehicle.PairGpsDevice` |
 
 US-18 remains partially complete until the corrections are implemented and verified. Geofences and telemetry are reviewed in row 10; departure and dispatch-linked tracking belong to row 12. The review does not introduce an active/disabled vehicle state. Local MySQL 9.6 verification does not replace production acceptance on Azure MySQL 8.4.
+
+## Row 11 implementation
+
+F9-01 through F9-06 are addressed by domain/input validation, structured GPS ownership conflicts, fresh vehicle reads, bounded requests and submission guards, and clearing position on device replacement. The real API and frontend checks are recorded with the row 11 implementation. Timestamp ordering and dispatch-route association remain in row 12.

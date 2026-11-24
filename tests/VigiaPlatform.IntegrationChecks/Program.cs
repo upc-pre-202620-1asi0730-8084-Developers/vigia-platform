@@ -15,6 +15,28 @@ using VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.ValueObjects
 using VigiaPlatform.API.Order_management_and_distpatch.Interfaces.Rest.Resources;
 using VigiaPlatform.API.Order_management_and_distpatch.Interfaces.Rest.Transform;
 
+var fleetChecks = 0;
+void RejectFleet(Action action)
+{
+    try { action(); } catch (VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Exceptions.FleetException) { fleetChecks++; return; }
+    throw new Exception("Invalid fleet value was accepted.");
+}
+RejectFleet(() => _ = new VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Model.ValueObjects.VehicleCapacity(0.001));
+RejectFleet(() => _ = new VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Model.ValueObjects.VehicleCapacity(double.PositiveInfinity));
+RejectFleet(() => _ = new VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Model.ValueObjects.LicensePlate("!!!!!"));
+RejectFleet(() => _ = new VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Model.ValueObjects.GpsDeviceId(new string('G',65)));
+var fleetLocation = new VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Model.ValueObjects.Location(-12.07,-77.03);
+RejectFleet(() => _ = new VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Model.Aggregates.Geofence("company","site","name",
+    VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Model.ValueObjects.GeofenceType.Warehouse, fleetLocation,double.NaN));
+var fleetVehicle = new VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Model.Aggregates.Vehicle("company",
+    new VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Model.ValueObjects.LicensePlate("ABC-123"),"Brand","Model",
+    new VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Model.ValueObjects.VehicleCapacity(0.01),"GPS-1");
+fleetVehicle.UpdatePosition(fleetLocation); fleetVehicle.PairGpsDevice("gps-1");
+if (fleetVehicle.CurrentPos is null) throw new Exception("Identical GPS replay lost the position."); fleetChecks++;
+fleetVehicle.PairGpsDevice("GPS-2");
+if (fleetVehicle.CurrentPos is not null) throw new Exception("Replacement GPS inherited the old position."); fleetChecks++;
+Console.WriteLine($"PASS: {fleetChecks} fleet domain checks.");
+
 if (args.Length != 1) throw new ArgumentException("Pass the path to the private local appsettings.Development.json file.");
 using var config = JsonDocument.Parse(await File.ReadAllTextAsync(args[0]));
 var connection = new MySqlConnectionStringBuilder(config.RootElement.GetProperty("ConnectionStrings").GetProperty("DefaultConnection").GetString());
@@ -173,4 +195,28 @@ using (var legacy = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>()
         await legacy.Set<VigiaPlatform.API.ProjectManagement.Domain.Model.ConstructionProject>().CountAsync() != 1)
         throw new Exception("The legacy-schema guard failed to preserve the existing schema and data.");
 }
+using (var db = new AppDbContext(options))
+{
+    var fence = new VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Model.Aggregates.Geofence("atomic-company","atomic-site","First",
+        VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Model.ValueObjects.GeofenceType.Warehouse,fleetLocation,100);
+    await new VigiaPlatform.API.FleetAndDeviceRegistry.Infrastructure.Persistence.EntityFrameworkCore.Repositories.GeofenceRepository(db).AddForSiteAsync(fence);
+    await new UnitOfWork(db,[new ActivityChangeRecorder(db,accessor)]).CompleteAsync();
+}
+using (var db = new AppDbContext(options))
+{
+    var duplicate = new VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Model.Aggregates.Geofence("atomic-company","atomic-site","Duplicate",
+        VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Model.ValueObjects.GeofenceType.Warehouse,fleetLocation,100);
+    await new VigiaPlatform.API.FleetAndDeviceRegistry.Infrastructure.Persistence.EntityFrameworkCore.Repositories.GeofenceRepository(db).AddForSiteAsync(duplicate);
+    var rejected = false;
+    try { await new UnitOfWork(db,[new ActivityChangeRecorder(db,accessor)]).CompleteAsync(); }
+    catch (DbUpdateException ex) when (ex.GetBaseException() is MySqlException {Number:1062}) { rejected = true; }
+    if (!rejected) throw new Exception("Duplicate geofence registration was accepted.");
+}
+using (var db = new AppDbContext(options))
+{
+    if (await db.Geofences.CountAsync(g => g.CompanyId=="atomic-company" && g.SiteId=="atomic-site") != 1 ||
+        await db.Set<VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Model.Entities.GeofenceSiteRegistration>().CountAsync(g => g.CompanyId=="atomic-company") != 1)
+        throw new Exception("Duplicate registration left an orphan geofence.");
+}
+Console.WriteLine("PASS: duplicate geofence registration rolls back without an orphan business record.");
 Console.WriteLine($"PASS: complete migration chain, real MySQL rollback, atomic success, weighing and guide audit rollback, stale load/guide rejection, telemetry history and legacy-schema safety. Database: {connection.Database}");

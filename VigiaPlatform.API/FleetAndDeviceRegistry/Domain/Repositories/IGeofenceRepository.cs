@@ -9,6 +9,8 @@ using VigiaPlatform.API.Shared.Domain.Repositories;
 /// </summary>
 public interface IGeofenceRepository : IBaseRepository<Geofence>
 {
+    Task<Geofence?> FindByCompanyAndSiteAsync(string companyId, string siteId, CancellationToken cancellationToken = default);
+    Task AddForSiteAsync(Geofence geofence, CancellationToken cancellationToken = default);
     Task<Geofence?> FindBySiteIdAsync(string siteId, CancellationToken cancellationToken = default);
     Task<IEnumerable<Geofence>> ListByTypeAsync(GeofenceType type, CancellationToken cancellationToken = default);
     Task<IEnumerable<Geofence>> ListByCompanyIdAsync(string companyId, CancellationToken cancellationToken = default);

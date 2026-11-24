@@ -119,8 +119,8 @@ public class VehiclesController(
     private IActionResult MapFleetException(FleetException ex) => ex.Code switch
     {
         FleetErrorCodes.VehicleNotFound => NotFound(new { code = ex.Code, message = ex.Message }),
-        FleetErrorCodes.DuplicateLicensePlate or FleetErrorCodes.DeviceAlreadyAssigned =>
-            Conflict(new { code = ex.Code, message = ex.Message }),
+        FleetErrorCodes.DuplicateLicensePlate or FleetErrorCodes.DeviceAlreadyAssigned or FleetErrorCodes.ConcurrentModification =>
+            Conflict(new { code = ex.Code, message = ex.Message, assignedLicensePlate = ex.AssignedLicensePlate }),
         _ => BadRequest(new { code = ex.Code, message = ex.Message })
     };
 }

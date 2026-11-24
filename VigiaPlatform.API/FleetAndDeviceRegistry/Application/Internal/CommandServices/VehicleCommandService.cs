@@ -6,6 +6,8 @@ using VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Model.Aggregates;
 using VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Model.ValueObjects;
 using VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Repositories;
 using VigiaPlatform.API.Shared.Domain.Repositories;
+using Microsoft.EntityFrameworkCore;
+using MySql.Data.MySqlClient;
 
 public class VehicleCommandService(IVehicleRepository vehicleRepository, IUnitOfWork unitOfWork) : IVehicleCommandService
 {
@@ -24,7 +26,7 @@ public class VehicleCommandService(IVehicleRepository vehicleRepository, IUnitOf
             var existingByGps = await vehicleRepository.FindByGpsDeviceIdAsync(gpsDevice.Value, cancellationToken);
             if (existingByGps is not null)
                 throw new FleetException(FleetErrorCodes.DeviceAlreadyAssigned,
-                    $"GPS device '{gpsDevice.Value}' is already assigned to vehicle '{existingByGps.LicensePlate.Value}'.");
+                    $"GPS device '{gpsDevice.Value}' is already assigned to vehicle '{existingByGps.LicensePlate.Value}'.") { AssignedLicensePlate = existingByGps.LicensePlate.Value };
             normalizedGpsId = gpsDevice.Value;
         }
 
@@ -39,7 +41,7 @@ public class VehicleCommandService(IVehicleRepository vehicleRepository, IUnitOf
         );
 
         await vehicleRepository.AddAsync(vehicle, cancellationToken);
-        await unitOfWork.CompleteAsync(cancellationToken);
+        await SaveAsync(vehicle.LicensePlate.Value, vehicle.GpsDeviceId, cancellationToken);
         return vehicle;
     }
 
@@ -53,12 +55,12 @@ public class VehicleCommandService(IVehicleRepository vehicleRepository, IUnitOf
         var assignedVehicle = await vehicleRepository.FindByGpsDeviceIdAsync(gpsDevice.Value, cancellationToken);
         if (assignedVehicle is not null && assignedVehicle.Id != vehicle.Id)
             throw new FleetException(FleetErrorCodes.DeviceAlreadyAssigned,
-                $"GPS device '{gpsDevice.Value}' is already assigned to vehicle '{assignedVehicle.LicensePlate.Value}'.");
+                $"GPS device '{gpsDevice.Value}' is already assigned to vehicle '{assignedVehicle.LicensePlate.Value}'.") { AssignedLicensePlate = assignedVehicle.LicensePlate.Value };
 
         vehicle.PairGpsDevice(gpsDevice.Value);
 
         vehicleRepository.Update(vehicle);
-        await unitOfWork.CompleteAsync(cancellationToken);
+        await SaveAsync(vehicle.LicensePlate.Value, vehicle.GpsDeviceId, cancellationToken);
         return vehicle;
     }
 
@@ -72,7 +74,20 @@ public class VehicleCommandService(IVehicleRepository vehicleRepository, IUnitOf
         vehicle.UpdatePosition(location);
 
         vehicleRepository.Update(vehicle);
-        await unitOfWork.CompleteAsync(cancellationToken);
+        await SaveAsync(vehicle.LicensePlate.Value, vehicle.GpsDeviceId, cancellationToken);
         return vehicle;
+    }
+    private async Task SaveAsync(string plate, string? gps, CancellationToken ct)
+    {
+        try { await unitOfWork.CompleteAsync(ct); }
+        catch (DbUpdateException ex) when (ex.GetBaseException() is MySqlException { Number: 1062 })
+        {
+            var owner = string.IsNullOrWhiteSpace(gps) ? null : await vehicleRepository.FindByGpsDeviceIdAsync(gps, ct);
+            if (owner is not null && owner.LicensePlate.Value != plate)
+                throw new FleetException(FleetErrorCodes.DeviceAlreadyAssigned, "GPS device is already assigned.") { AssignedLicensePlate = owner.LicensePlate.Value };
+            throw new FleetException(FleetErrorCodes.DuplicateLicensePlate, "License plate is already registered.");
+        }
+        catch (DbUpdateException ex) when (ex.GetBaseException() is MySqlException { Number: 1205 or 1213 })
+        { throw new FleetException(FleetErrorCodes.ConcurrentModification, "A concurrent write prevented this change. Refresh and retry."); }
     }
 }
