@@ -27,7 +27,8 @@ public static class DispatchResourceFromEntityAssembler
             entity.VehicleId?.Value,
             entity.VehiclePlate?.Value,
             entity.LatestWeighing is null ? null : DispatchWeighingResourceAssembler.ToResource(entity, entity.LatestWeighing),
-            entity.RequiresWeightReview);
+            entity.RequiresWeightReview,
+            DispatchDeliveryGuideResourceAssembler.ToResource(entity), entity.IsAuthorized, entity.CanDepart);
 
     public static DispatchItemResource ToResourceFromEntity(DispatchItem item) =>
         new(item.Id,

@@ -117,6 +117,43 @@ using (var db = new AppDbContext(options))
         dispatch.RequiresWeightReview || dispatch.Version != preparationVersion + 1)
         throw new Exception("Stale weighing update left partial records or replaced the accepted measurement.");
 }
+using (var db = new AppDbContext(options))
+{
+    var dispatch = await db.Set<Dispatch>().Include(d => d.Items).Include(d => d.Timeline).Include(d => d.Weighings)
+        .Include(d => d.DeliveryGuide).SingleAsync(d => d.Id == weighingDispatchId);
+    var version = dispatch.Version;
+    dispatch.IssueDeliveryGuide("Local Driver", "Local Carrier", 1, "Integration Check", DateTimeOffset.UtcNow, Guid.NewGuid());
+    await db.Database.ExecuteSqlRawAsync("CREATE TRIGGER fail_guide_activity BEFORE INSERT ON activity_records FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'intentional guide audit failure'");
+    var rejected = false;
+    try { await new UnitOfWork(db, [new ActivityChangeRecorder(db, accessor)]).CompleteAsync(); }
+    catch (DbUpdateException) { rejected = true; }
+    finally { await db.Database.ExecuteSqlRawAsync("DROP TRIGGER fail_guide_activity"); }
+    if (!rejected) throw new Exception("A guide with failed audit was not rolled back.");
+    using var verify = new AppDbContext(options);
+    var persisted = await verify.Set<Dispatch>().Include(d => d.Timeline).Include(d => d.DeliveryGuide).SingleAsync(d => d.Id == weighingDispatchId);
+    if (persisted.DeliveryGuide is not null || persisted.Version != version || persisted.Timeline.Count != 4)
+        throw new Exception("Failed guide audit left an authorization, timeline event or version change committed.");
+}
+using (var firstDb = new AppDbContext(options))
+using (var staleDb = new AppDbContext(options))
+{
+    var first = await firstDb.Set<Dispatch>().Include(d => d.Items).Include(d => d.Timeline).Include(d => d.Weighings).Include(d => d.DeliveryGuide).SingleAsync(d => d.Id == weighingDispatchId);
+    var stale = await staleDb.Set<Dispatch>().Include(d => d.Items).Include(d => d.Timeline).Include(d => d.Weighings).Include(d => d.DeliveryGuide).SingleAsync(d => d.Id == weighingDispatchId);
+    first.AddItem(DispatchCommandFromResourceAssembler.ToCommandFromResource(first.Id,
+        new AddDispatchItemResource("MAT-RACE", "Changed load", 1, "kg", "", "Integration Check")), DateTime.UtcNow);
+    await new UnitOfWork(firstDb, [new ActivityChangeRecorder(firstDb, accessor)]).CompleteAsync();
+    stale.IssueDeliveryGuide("Local Driver", "Local Carrier", 1, "Integration Check", DateTimeOffset.UtcNow, Guid.NewGuid());
+    var rejected = false;
+    try { await new UnitOfWork(staleDb, [new ActivityChangeRecorder(staleDb, accessor)]).CompleteAsync(); }
+    catch (DbUpdateConcurrencyException) { rejected = true; }
+    if (!rejected) throw new Exception("Guide issuance on a stale load was not rejected.");
+}
+using (var db = new AppDbContext(options))
+{
+    var dispatch = await db.Set<Dispatch>().Include(d => d.Items).Include(d => d.Weighings).Include(d => d.DeliveryGuide).SingleAsync(d => d.Id == weighingDispatchId);
+    if (dispatch.DeliveryGuide is not null || !dispatch.RequiresWeightReview)
+        throw new Exception("Stale guide left a persisted authorization or changed the current-load review rule.");
+}
 var legacyConnection = new MySqlConnectionStringBuilder(connection.ConnectionString) { Database = connection.Database + "_legacy" };
 using (var legacy = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>().UseMySQL(legacyConnection.ConnectionString).Options))
 {
@@ -136,4 +173,4 @@ using (var legacy = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>()
         await legacy.Set<VigiaPlatform.API.ProjectManagement.Domain.Model.ConstructionProject>().CountAsync() != 1)
         throw new Exception("The legacy-schema guard failed to preserve the existing schema and data.");
 }
-Console.WriteLine($"PASS: complete migration chain, real MySQL rollback, atomic success, weighing audit rollback and stale-write rejection, telemetry history and rejection of an isolated EnsureCreated schema without altering its records. Database: {connection.Database}");
+Console.WriteLine($"PASS: complete migration chain, real MySQL rollback, atomic success, weighing and guide audit rollback, stale load/guide rejection, telemetry history and legacy-schema safety. Database: {connection.Database}");

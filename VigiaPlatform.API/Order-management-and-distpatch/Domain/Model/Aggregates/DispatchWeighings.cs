@@ -31,6 +31,8 @@ public partial class Dispatch
     public DispatchWeighing RecordNetWeight(decimal weightKg, decimal? expectedWeightKg, decimal? toleranceKg,
         int accountId, string actor, DateTimeOffset now, Guid? requestId)
     {
+        if (DeliveryGuide is not null)
+            throw new InvalidOperationException("The issued guide locks its weighing. Cancel this dispatch to prepare a replacement.");
         if (Status != DispatchStatus.InPreparation || VehicleId is null || VehiclePlate is null)
             throw new InvalidOperationException("Weighing requires an IN_PREPARATION dispatch with an assigned vehicle.");
         var weighing = new DispatchWeighing(weightKg, expectedWeightKg, toleranceKg, VehicleId.Value,

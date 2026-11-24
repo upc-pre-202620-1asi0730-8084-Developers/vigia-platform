@@ -87,12 +87,16 @@ public static class LocalIntegrationSeeder
         }
         if (!await db.Set<Dispatch>().AnyAsync())
         {
+            var warehouse = await db.Set<UserAccount>().SingleAsync(account => account.Username == "warehouse.local");
             var approved = await db.Set<Order>().FirstAsync(o => o.Status == OrderStatusType.Approved);
             var planner = services.GetRequiredService<DispatchPlanningService>();
             var dispatch = await planner.PlanAsync(new DispatchPlan(project.Name, approved.Id.ToString(),
                 DateTime.UtcNow.ToString("yyyy-MM-dd"), "18:00", "DEPARTURE_TO_WORK", "AVERAGE", "Local demonstration data"), "Local Warehouse Manager", default);
             var vehicle = await db.Vehicles.FirstAsync();
             dispatch.AssignVehicle(vehicle.Id, vehicle.LicensePlate.Value, "Local Warehouse Manager", DateTime.UtcNow);
+            dispatch.RecordNetWeight(100m, 100m, 2m, warehouse.Id, "Local Warehouse Manager", DateTimeOffset.UtcNow, Guid.NewGuid());
+            await unitOfWork.CompleteAsync();
+            dispatch.IssueDeliveryGuide("Local Driver", "Local Carrier", warehouse.Id, "Local Warehouse Manager", DateTimeOffset.UtcNow, Guid.NewGuid());
             dispatch.ChangeStatus(DispatchStatus.InTransit, "Local Warehouse Manager", null, DateTime.UtcNow);
             await unitOfWork.CompleteAsync();
         }

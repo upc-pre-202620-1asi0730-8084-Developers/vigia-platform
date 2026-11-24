@@ -117,8 +117,8 @@ public partial class Dispatch
         if (!CanMoveTo(newStatus))
             throw new InvalidOperationException($"Cannot change the dispatch status from {Status} to {newStatus}.");
 
-        if (newStatus == DispatchStatus.InTransit && VehicleId is null)
-            throw new InvalidOperationException("A vehicle must be assigned before the dispatch leaves.");
+        if (newStatus == DispatchStatus.InTransit && !CanDepart)
+            throw new InvalidOperationException("Departure requires a current delivery guide and conforming weighing.");
 
         Status = newStatus;
         Version++;
@@ -151,6 +151,8 @@ public partial class Dispatch
 
     private void EnsureEditable()
     {
+        if (DeliveryGuide is not null)
+            throw new InvalidOperationException("The issued guide locks the load and vehicle. Cancel this dispatch to prepare a replacement.");
         if (Status is not (DispatchStatus.Scheduled or DispatchStatus.InPreparation))
             throw new InvalidOperationException($"A dispatch with status {Status} can no longer be modified.");
     }

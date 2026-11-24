@@ -65,6 +65,7 @@ builder.Services.AddScoped<VigiaPlatform.API.SiteReceptionAndVerification.Infras
 builder.Services.AddScoped<VigiaPlatform.API.Order_management_and_distpatch.Infrastructure.Integration.DispatchPlanningService>();
 builder.Services.AddScoped<VigiaPlatform.API.Order_management_and_distpatch.Infrastructure.Integration.ResidentOrderService>();
 builder.Services.AddScoped<VigiaPlatform.API.Order_management_and_distpatch.Application.Internal.CommandServices.DispatchWeighingService>();
+builder.Services.AddScoped<VigiaPlatform.API.Order_management_and_distpatch.Application.Internal.CommandServices.DispatchDeliveryGuideService>();
 
 builder.Services.AddCors(options => options.AddPolicy(
     FrontendCorsPolicy, policy => policy

@@ -98,7 +98,7 @@ public class DispatchCommandService(
             var dispatch = await dispatchRepository.FindByIdAsync(dispatchId, cancellationToken);
             if (dispatch is null) return Failure(DispatchError.DispatchNotFound);
 
-            if (requireEditable && dispatch.Status is not (DispatchStatus.Scheduled or DispatchStatus.InPreparation))
+            if (requireEditable && (dispatch.DeliveryGuide is not null || dispatch.Status is not (DispatchStatus.Scheduled or DispatchStatus.InPreparation)))
                 return Failure(DispatchError.DispatchNotEditable);
 
             try
@@ -136,6 +136,10 @@ public class DispatchCommandService(
             return Failure(DispatchError.OperationCancelled);
         }
         catch (DbUpdateConcurrencyException)
+        {
+            return Failure(DispatchError.ConcurrentModification);
+        }
+        catch (DbUpdateException exception) when (exception.InnerException is MySql.Data.MySqlClient.MySqlException { Number: 1205 or 1213 })
         {
             return Failure(DispatchError.ConcurrentModification);
         }
