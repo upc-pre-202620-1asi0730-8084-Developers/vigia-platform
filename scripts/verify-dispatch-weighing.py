@@ -122,6 +122,8 @@ assert request('GET', path, token=warehouse)['requiresWeightReview'] is True
 retry_body = {**valid, 'requestId': str(uuid.uuid4())}
 final = request('POST', weighing_path, retry_body, warehouse, 201)
 assert not final['requiresReview'] and final['vehicleId'] == new_vehicle['id']
+request('PATCH', path + '/status', {'status': 'IN_TRANSIT', 'performedBy': 'Spoofed actor'}, warehouse, 409)
+request('POST', path + '/delivery-guide', {'driverName': 'Local Driver', 'carrierName': 'Local Carrier'}, warehouse, 201)
 request('PATCH', path + '/status', {'status': 'IN_TRANSIT', 'performedBy': 'Spoofed actor'}, warehouse)
 request('POST', weighing_path, {**valid, 'requestId': str(uuid.uuid4())}, warehouse, 409)
 assert request('POST', weighing_path, retry_body, warehouse, 201)['id'] == final['id']

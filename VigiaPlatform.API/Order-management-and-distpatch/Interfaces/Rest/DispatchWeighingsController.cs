@@ -36,6 +36,8 @@ public class DispatchWeighingsController(DispatchWeighingService service) : Cont
         catch (ArgumentException exception) { return BadRequest(new { code = "INVALID_WEIGHING", message = exception.Message }); }
         catch (InvalidOperationException exception) { return Conflict(new { code = "WEIGHING_CONFLICT", message = exception.Message }); }
         catch (DbUpdateConcurrencyException) { return Conflict(new { code = "DISPATCH_CHANGED", message = "The dispatch changed. Reload it before recording another weighing." }); }
+        catch (DbUpdateException exception) when (exception.InnerException is MySql.Data.MySqlClient.MySqlException { Number: 1205 or 1213 })
+        { return Conflict(new { code = "DISPATCH_CHANGED", message = "Another operation changed the dispatch. Retry using the same request ID." }); }
         catch (DbUpdateException exception) when (exception.InnerException is MySql.Data.MySqlClient.MySqlException { Number: 1062 })
         { return Conflict(new { code = "WEIGHING_CONFLICT", message = "The request was already recorded. Retry using the same request ID." }); }
     }

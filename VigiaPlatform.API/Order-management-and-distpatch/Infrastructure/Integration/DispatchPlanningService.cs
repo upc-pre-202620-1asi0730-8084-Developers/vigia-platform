@@ -47,11 +47,12 @@ public class DispatchPlanningService(AppDbContext db, IUnitOfWork unitOfWork)
     public async Task<object[]> UpcomingAsync(CancellationToken ct)
     {
         var registered = await db.Set<SiteReceptionAndVerification.Domain.Model.Aggregates.Reception>().Select(r => r.DispatchId).ToListAsync(ct);
-        var dispatches = await db.Set<Dispatch>().AsNoTracking().Include(d => d.Items).Where(d => d.Status == DispatchStatus.InTransit).ToListAsync(ct);
+        var dispatches = await db.Set<Dispatch>().AsNoTracking().Include(d => d.Items).Include(d => d.DeliveryGuide).Where(d => d.Status == DispatchStatus.InTransit).ToListAsync(ct);
         return dispatches.Where(d => !registered.Contains(d.Id.ToString())).Select(d => (object)new
         {
             id = d.Id, dispatchId = d.Id.ToString(), siteId = d.SiteId.Value, siteName = d.ProjectName.Value,
-            origin = "Warehouse", truckPlate = d.VehiclePlate?.Value, driverName = "",
+            origin = "Warehouse", truckPlate = d.VehiclePlate?.Value, driverName = d.DeliveryGuide?.DriverName ?? "",
+            deliveryGuideNumber = d.DeliveryGuide?.GuideNumber,
             estimatedArrival = $"{d.DepartureDate}T{d.EstimatedTime}:00", status = "IN_TRANSIT",
             materialDescription = d.Items.First().Material.Value, expectedQuantity = d.Items.First().Quantity.Value,
             unit = d.Items.First().Unit.ToString(), items = d.Items.Select(i => new { materialName = i.Material.Value,

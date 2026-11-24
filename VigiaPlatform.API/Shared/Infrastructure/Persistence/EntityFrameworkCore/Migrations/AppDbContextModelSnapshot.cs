@@ -705,6 +705,123 @@ namespace VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCor
                     b.ToTable("orders", (string)null);
                 });
 
+            modelBuilder.Entity("VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.Entities.DispatchDeliveryGuide", b =>
+                {
+                    b.Property<int>("DispatchId")
+                        .HasColumnType("int")
+                        .HasColumnName("dispatch_id");
+
+                    b.Property<string>("Address")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)")
+                        .HasColumnName("address");
+
+                    b.Property<string>("CargoFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("cargo_fingerprint");
+
+                    b.Property<string>("CarrierName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("varchar(150)")
+                        .HasColumnName("carrier_name");
+
+                    b.Property<string>("DriverName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("varchar(150)")
+                        .HasColumnName("driver_name");
+
+                    b.Property<decimal>("ExpectedWeightKg")
+                        .HasPrecision(12, 3)
+                        .HasColumnType("decimal(12,3)")
+                        .HasColumnName("expected_weight_kg");
+
+                    b.Property<string>("GuideNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("guide_number");
+
+                    b.Property<DateTime>("IssuedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("issued_at");
+
+                    b.Property<string>("IssuedBy")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("varchar(150)")
+                        .HasColumnName("issued_by");
+
+                    b.Property<int>("IssuedByAccountId")
+                        .HasColumnType("int")
+                        .HasColumnName("issued_by_account_id");
+
+                    b.Property<string>("ItemsJson")
+                        .IsRequired()
+                        .HasColumnType("longtext")
+                        .HasColumnName("items_json");
+
+                    b.Property<string>("ProjectName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("project_name");
+
+                    b.Property<string>("RelatedOrderId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("related_order_id");
+
+                    b.Property<string>("RequestId")
+                        .HasMaxLength(36)
+                        .HasColumnType("varchar(36)")
+                        .HasColumnName("request_id");
+
+                    b.Property<string>("SiteId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("site_id");
+
+                    b.Property<decimal>("ToleranceKg")
+                        .HasPrecision(12, 3)
+                        .HasColumnType("decimal(12,3)")
+                        .HasColumnName("tolerance_kg");
+
+                    b.Property<int>("VehicleId")
+                        .HasColumnType("int")
+                        .HasColumnName("vehicle_id");
+
+                    b.Property<string>("VehiclePlate")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("vehicle_plate");
+
+                    b.Property<int>("WeighingId")
+                        .HasColumnType("int")
+                        .HasColumnName("weighing_id");
+
+                    b.Property<decimal>("WeightKg")
+                        .HasPrecision(12, 3)
+                        .HasColumnType("decimal(12,3)")
+                        .HasColumnName("weight_kg");
+
+                    b.HasKey("DispatchId")
+                        .HasName("pk_dispatch_delivery_guides");
+
+                    b.HasIndex("GuideNumber")
+                        .IsUnique()
+                        .HasDatabaseName("ix_dispatch_delivery_guides_guide_number");
+
+                    b.ToTable("dispatch_delivery_guides", (string)null);
+                });
+
             modelBuilder.Entity("VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.Entities.DispatchItem", b =>
                 {
                     b.Property<int>("Id")
@@ -1595,6 +1712,16 @@ namespace VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCor
                         .HasConstraintName("fk_inventory_movements_materials_material_id");
                 });
 
+            modelBuilder.Entity("VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.Entities.DispatchDeliveryGuide", b =>
+                {
+                    b.HasOne("VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.Aggregates.Dispatch", null)
+                        .WithOne("DeliveryGuide")
+                        .HasForeignKey("VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.Entities.DispatchDeliveryGuide", "DispatchId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_dispatch_delivery_guides_dispatches_dispatch_id");
+                });
+
             modelBuilder.Entity("VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.Entities.DispatchItem", b =>
                 {
                     b.HasOne("VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.Aggregates.Dispatch", null)
@@ -1859,6 +1986,8 @@ namespace VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCor
 
             modelBuilder.Entity("VigiaPlatform.API.Order_management_and_distpatch.Domain.Model.Aggregates.Dispatch", b =>
                 {
+                    b.Navigation("DeliveryGuide");
+
                     b.Navigation("Items");
 
                     b.Navigation("Timeline");

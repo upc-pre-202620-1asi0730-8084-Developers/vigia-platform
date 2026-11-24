@@ -21,4 +21,7 @@ public record DispatchResource(
     int? VehicleId,
     string? VehiclePlate,
     DispatchWeighingResource? LatestWeighing = null,
-    bool RequiresWeightReview = true);
+    bool RequiresWeightReview = true,
+    DispatchDeliveryGuideResource? DeliveryGuide = null,
+    bool IsAuthorized = false,
+    bool CanDepart = false);
