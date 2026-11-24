@@ -90,6 +90,8 @@ builder.Services.AddTransitTraceabilityContext();
 builder.Services.AddSiteReceptionAndVerificationContext();
 
 // Discrepancy and Evidence Management
+builder.Services.AddScoped<VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Infrastructure.Evidence.EvidenceAccess>();
+builder.Services.AddScoped<VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Infrastructure.Evidence.EvidenceFileService>();
 builder.Services.AddScoped<
     IDiscrepancyCaseRepository,
     DiscrepancyCaseRepository>();

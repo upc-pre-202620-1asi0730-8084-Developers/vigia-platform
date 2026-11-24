@@ -178,6 +178,76 @@ namespace VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCor
                     b.ToTable("discrepancy_case_events", (string)null);
                 });
 
+            modelBuilder.Entity("VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Domain.Model.Entities.StoredEvidenceFile", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("char(36)")
+                        .HasColumnName("id");
+
+                    b.Property<byte[]>("Content")
+                        .IsRequired()
+                        .HasColumnType("mediumblob")
+                        .HasColumnName("content");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("varchar(40)")
+                        .HasColumnName("content_type");
+
+                    b.Property<int>("EvidenceId")
+                        .HasColumnType("int")
+                        .HasColumnName("evidence_id");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("varchar(120)")
+                        .HasColumnName("file_name");
+
+                    b.Property<string>("Fingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("fingerprint");
+
+                    b.Property<int>("ReceptionId")
+                        .HasColumnType("int")
+                        .HasColumnName("reception_id");
+
+                    b.Property<Guid>("RequestId")
+                        .HasColumnType("char(36)")
+                        .HasColumnName("request_id");
+
+                    b.Property<string>("Sha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("sha256");
+
+                    b.Property<DateTime>("UploadedAt")
+                        .HasPrecision(6)
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("uploaded_at");
+
+                    b.Property<int>("UploadedByAccountId")
+                        .HasColumnType("int")
+                        .HasColumnName("uploaded_by_account_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_stored_evidence_files");
+
+                    b.HasIndex("EvidenceId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_stored_evidence_files_evidence_id");
+
+                    b.HasIndex("ReceptionId", "RequestId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_stored_evidence_files_reception_id_request_id");
+
+                    b.ToTable("stored_evidence_files", (string)null);
+                });
+
             modelBuilder.Entity("VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Model.Aggregates.Geofence", b =>
                 {
                     b.Property<int>("Id")
@@ -1708,6 +1778,25 @@ namespace VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCor
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_discrepancy_case_events_discrepancy_cases_discrepancy_case_id");
+                });
+
+            modelBuilder.Entity("VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Domain.Model.Entities.StoredEvidenceFile", b =>
+                {
+                    b.HasOne("VigiaPlatform.API.SiteReceptionAndVerification.Domain.Model.Entities.ReceptionEvidence", "Evidence")
+                        .WithOne()
+                        .HasForeignKey("VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Domain.Model.Entities.StoredEvidenceFile", "EvidenceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_stored_evidence_files_reception_evidences_evidence_id");
+
+                    b.HasOne("VigiaPlatform.API.SiteReceptionAndVerification.Domain.Model.Aggregates.Reception", null)
+                        .WithMany()
+                        .HasForeignKey("ReceptionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_stored_evidence_files_receptions_reception_id");
+
+                    b.Navigation("Evidence");
                 });
 
             modelBuilder.Entity("VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Model.Aggregates.Geofence", b =>

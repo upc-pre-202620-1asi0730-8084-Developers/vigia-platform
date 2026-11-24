@@ -20,7 +20,8 @@ using VigiaPlatform.API.SiteReceptionAndVerification.Interfaces.REST.Transform;
 [Produces(MediaTypeNames.Application.Json)]
 public class ReceptionsController(
     IReceptionCommandService receptionCommandService,
-    IReceptionQueryService receptionQueryService
+    IReceptionQueryService receptionQueryService,
+    VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Infrastructure.Evidence.EvidenceAccess evidenceAccess
 ) : ControllerBase
 {
     /// <summary>
@@ -211,8 +212,11 @@ public class ReceptionsController(
     [ProducesResponseType(typeof(ErrorResource), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> AttachEvidence(int id, [FromBody] AttachEvidenceResource resource, CancellationToken cancellationToken)
     {
+        if(!await evidenceAccess.ReceptionAsync(id,User,cancellationToken))return NotFound();
         try
         {
+            if (!Uri.TryCreate(resource.FileUrl,UriKind.Absolute,out var reference) || reference.Scheme is not ("https" or "http"))
+                return BadRequest(new {code="EXTERNAL_REFERENCE_REQUIRED",message="Use multipart upload for stored photos; this endpoint accepts only external HTTP references."});
             var command = new AttachPhotographicEvidenceCommand(id, resource.EvidenceType, resource.FileUrl, resource.Description);
             var result = await receptionCommandService.Handle(command, cancellationToken);
             if (result is null)

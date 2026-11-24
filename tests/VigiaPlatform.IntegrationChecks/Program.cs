@@ -310,3 +310,37 @@ using (var db = new AppDbContext(options))
     if(!rejected || await db.Set<Dispatch>().CountAsync()!=before)throw new Exception("Ambiguous project planning selected a project or persisted a dispatch.");
 }
 Console.WriteLine("PASS: duplicate project names reject dispatch planning without a partial dispatch.");
+
+// Stored photo bytes, receipt evidence and audit must commit or roll back together.
+var photoUser=new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier,"1"),new Claim(ClaimTypes.Role,"ADMIN"),new Claim(ClaimTypes.Name,"Local evidence check")],"local-check"));
+var photoBytes=Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==");
+var photoRequest=Guid.NewGuid();int photoReceipt;int evidenceBefore;
+using(var db=new AppDbContext(options))
+{
+ var receipt=new Reception("atomic-photo","ABC-123","Local",1,"Local","Local");db.Add(receipt);await db.SaveChangesAsync();photoReceipt=receipt.Id;
+ evidenceBefore=await db.Set<VigiaPlatform.API.SiteReceptionAndVerification.Domain.Model.Entities.ReceptionEvidence>().CountAsync();
+ await db.Database.ExecuteSqlRawAsync("CREATE TRIGGER fail_photo_audit BEFORE INSERT ON activity_records FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='intentional photo audit failure'");
+ var failed=false;
+ try{
+  using var content=new MemoryStream(photoBytes);var file=new FormFile(content,0,content.Length,"file","local.png"){Headers=new HeaderDictionary(),ContentType="image/png"};
+  var service=new VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Infrastructure.Evidence.EvidenceFileService(db,new UnitOfWork(db,[new ActivityChangeRecorder(db,accessor)]),new(db));
+  await service.UploadAsync(photoReceipt,file,"Atomic photo",photoRequest,photoUser,default);
+ }catch(DbUpdateException){failed=true;}
+ finally{await db.Database.ExecuteSqlRawAsync("DROP TRIGGER fail_photo_audit");}
+ if(!failed)throw new Exception("Photo audit failure was not exercised.");
+}
+using(var db=new AppDbContext(options))
+{
+ if(await db.Set<VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Domain.Model.Entities.StoredEvidenceFile>().AnyAsync() ||
+    await db.Set<VigiaPlatform.API.SiteReceptionAndVerification.Domain.Model.Entities.ReceptionEvidence>().CountAsync()!=evidenceBefore)
+    throw new Exception("Photo audit failure left bytes or evidence metadata committed.");
+ using var content=new MemoryStream(photoBytes);var file=new FormFile(content,0,content.Length,"file","local.png"){Headers=new HeaderDictionary(),ContentType="image/png"};
+ var service=new VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Infrastructure.Evidence.EvidenceFileService(db,new UnitOfWork(db,[new ActivityChangeRecorder(db,accessor)]),new(db));
+ await service.UploadAsync(photoReceipt,file,"Atomic photo",photoRequest,photoUser,default);
+}
+using(var db=new AppDbContext(options))
+{
+ var photo=await db.Set<VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Domain.Model.Entities.StoredEvidenceFile>().SingleAsync();
+ if(!photo.Content.SequenceEqual(photoBytes)||photo.EvidenceId<=0)throw new Exception("Stored photo retry did not persist complete bytes and linkage.");
+}
+Console.WriteLine("PASS: photo audit failure rolls back both stored bytes and receipt evidence; exact request retry commits complete linkage.");

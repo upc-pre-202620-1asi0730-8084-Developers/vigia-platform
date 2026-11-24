@@ -1,3 +1,7 @@
+using Microsoft.EntityFrameworkCore;
+using VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Infrastructure.Evidence;
+using VigiaPlatform.API.SiteReceptionAndVerification.Infrastructure.Integration;
+using VigiaPlatform.API.SiteReceptionAndVerification.Interfaces.REST.Transform;
 using Microsoft.AspNetCore.Mvc;
 using VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Application.CommandServices;
 using VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Application.QueryServices;
@@ -13,7 +17,7 @@ namespace VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Interfaces.REST;
 [Route("api/v1/discrepancy-cases")]
 public class DiscrepancyCasesController(
     IDiscrepancyCaseCommandService commandService,
-    IDiscrepancyCaseQueryService queryService)
+    IDiscrepancyCaseQueryService queryService, EvidenceAccess access, PhysicalReceptionService receipts)
     : ControllerBase
 {
     [HttpGet]
@@ -28,7 +32,8 @@ public class DiscrepancyCasesController(
         var discrepancies = await queryService.Handle(
             query, cancellationToken);
 
-        var resources = discrepancies
+        var allowed=await access.CaseIdsAsync(User,cancellationToken);
+        var resources = discrepancies.Where(c=>allowed.Contains(c.Id))
             .Select(
                 DiscrepancyCaseResourceFromEntityAssembler
                     .ToResourceFromEntity)
@@ -51,7 +56,7 @@ public class DiscrepancyCasesController(
         var discrepancyCase = await queryService.Handle(
             query, cancellationToken);
 
-        if (discrepancyCase is null)
+        if (discrepancyCase is null || !await access.CaseAsync(id,User,cancellationToken))
         {
             return NotFound();
         }
@@ -77,7 +82,7 @@ public class DiscrepancyCasesController(
         var discrepancyCase = await queryService.Handle(
             query, cancellationToken);
 
-        if (discrepancyCase is null)
+        if (discrepancyCase is null || !await access.CaseAsync(id,User,cancellationToken))
         {
             return NotFound();
         }
@@ -91,6 +96,14 @@ public class DiscrepancyCasesController(
             .ToList();
 
         return Ok(resources);
+    }
+
+    [HttpGet("{id:int}/reception")]
+    public async Task<IActionResult> GetCaseReception(int id,CancellationToken ct)
+    {
+        var receiptId=await access.CaseReceptionAsync(id,User,ct);
+        if(receiptId is null)return NotFound();
+        return Ok(ReceptionAssembler.ToResourceFromEntity((await receipts.FindAsync(receiptId.Value,ct))!));
     }
 
     [HttpPost]
@@ -109,6 +122,13 @@ public class DiscrepancyCasesController(
             return BadRequest("Invalid discrepancy case data.");
         }
 
+        if(!int.TryParse(resource.ReceptionId,out var receiptId) || receiptId<=0)
+            return BadRequest(new {code="INVALID_RECEPTION",message="Select an existing reception."});
+        if(!await access.ReceptionAsync(receiptId,User,cancellationToken))return NotFound();
+        var receipt=await receipts.FindAsync(receiptId,cancellationToken);
+        if(resource.DispatchId!=receipt!.DispatchId || resource.CaseNumber.Length>100)
+            return BadRequest(new {code="INVALID_CASE_LINK",message="The reception and dispatch must match."});
+        resource=resource with {ReceptionId=receiptId.ToString()};
         var command =
             CreateDiscrepancyCaseCommandFromResourceAssembler
                 .ToCommandFromResource(resource);
@@ -137,6 +157,7 @@ public class DiscrepancyCasesController(
         [FromBody] DetermineDiscrepancyResponsibilityResource resource,
         CancellationToken cancellationToken)
     {
+        if(!await access.CaseAsync(id,User,cancellationToken))return NotFound();
         if (id <= 0)
         {
             return BadRequest("Invalid discrepancy case ID.");
@@ -177,7 +198,7 @@ public class DiscrepancyCasesController(
                     command,
                     cancellationToken);
 
-                if (discrepancyCase is null)
+                if (discrepancyCase is null || !await access.CaseAsync(id,User,cancellationToken))
                 {
                     return NotFound();
                 }
