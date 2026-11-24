@@ -1,0 +1,93 @@
+{
+  "review": "row13 integration contract review",
+  "httpChecks": 75,
+  "foundationVerified": true,
+  "externalReceptionAccepted": false,
+  "andreDeliveryReceived": false,
+  "observations": {
+    "conformantDispatchStatus": "IN_TRANSIT",
+    "outsiderReceptionStatus": 200,
+    "caseClosure": "Liability required; resolution summary optional in current API",
+    "outsiderCaseReportStatus": 200,
+    "wrongGuideReceptionStatus": 201,
+    "outsiderRegistrationStatus": 201,
+    "errorResponseContract": "Current case-closing conflict can be plain text; verification accepts text and JSON without assuming an envelope."
+  },
+  "findings": [
+    {
+      "id": "F13-02",
+      "owner": "Andre A01; coordinate Fabian/Leonardo",
+      "status": "Open",
+      "message": "Conforming receipt does not complete its dispatch; vehicle remains unavailable for another departure.",
+      "observed": "IN_TRANSIT"
+    },
+    {
+      "id": "F13-03",
+      "owner": "Andre A01/A02",
+      "status": "Open",
+      "message": "Unassigned resident can read another project reception.",
+      "observed": 200
+    },
+    {
+      "id": "F13-04",
+      "owner": "Elias row15/16; coordinate Andre A01",
+      "status": "Open",
+      "message": "Unassigned resident can download another project discrepancy report.",
+      "observed": 200
+    },
+    {
+      "id": "F13-05",
+      "owner": "Elias row15/16; Andre A03",
+      "status": "Open",
+      "message": "Evidence is only an external URL reference; persisted upload/download still requires verification.",
+      "observed": "No file-upload acceptance claimed"
+    },
+    {
+      "id": "F13-06",
+      "owner": "Andre A01",
+      "status": "Open",
+      "message": "Reception accepts a guide number that does not match the dispatch immutable guide.",
+      "observed": 201
+    },
+    {
+      "id": "F13-07",
+      "owner": "Andre A01",
+      "status": "Open",
+      "message": "Unassigned resident can register a physical reception for another project.",
+      "observed": 201
+    }
+  ],
+  "scope": "Local isolated MySQL/API; no Azure, release or physical hardware acceptance",
+  "dateLocal": "2026-11-24",
+  "branch": "fix/integration-contracts",
+  "fixedFindings": [
+    {
+      "id": "F13-01",
+      "owner": "Leonardo",
+      "status": "Fixed",
+      "message": "Duplicate project names now reject dispatch planning without creating a dispatch. Unique-name planning remains supported.",
+      "backendCommit": "843c64c",
+      "frontendContractTestsCommit": "20aa05d"
+    },
+    {
+      "id": "F13-08",
+      "owner": "Elias",
+      "status": "Fixed",
+      "message": "Frontend case entity and assembler preserve receptionId, caseNumber, closedAt and resolutionSummary; contract test verifies the original values."
+    }
+  ],
+  "acceptanceGate": "Row13 review completed; US09/TS04/US10 and final release are not accepted until the external handoff and findings are resolved.",
+  "handoff": {
+    "Andre": [
+      "Use dispatch numeric ID and actual immutable guide; reject a guide belonging to another dispatch",
+      "Enforce assigned-project ownership for register/read/update/compare/verify and legacy reception endpoints",
+      "Complete conforming receipt and dispatch/active-trip closure atomically; retry without duplicate receipt/case",
+      "Deliver A01/A02 branch and tests with exact status/error contract"
+    ],
+    "Elias": [
+      "Scope case, timeline, PDF and evidence access to the associated assigned project",
+      "Implement and verify persisted evidence upload/retrieval in rows15/16; URL metadata alone is insufficient",
+      "Preserve receptionId and dispatchId through frontend assemblers; coordinate A03 with Andre"
+    ]
+  }
+}
