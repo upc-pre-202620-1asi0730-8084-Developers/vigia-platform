@@ -16,6 +16,8 @@ public class VehicleConfiguration : IEntityTypeConfiguration<Vehicle>
         builder.Property(v => v.GpsDeviceId).HasMaxLength(64);
         builder.HasIndex(v => v.GpsDeviceId).IsUnique();
         builder.Ignore(v => v.IsGpsPaired);
+        builder.Property(v => v.PositionVersion).IsConcurrencyToken();
+        builder.Property(v => v.PositionReportedAt).HasConversion(new VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCore.Configuration.UtcTimestampConverter()).HasColumnType("datetime(6)").HasPrecision(6);
 
         builder.OwnsOne(v => v.LicensePlate, lp =>
         {

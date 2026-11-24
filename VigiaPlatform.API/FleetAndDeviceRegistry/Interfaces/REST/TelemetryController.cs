@@ -1,36 +1,31 @@
 namespace VigiaPlatform.API.FleetAndDeviceRegistry.Interfaces.REST;
-
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Model.ValueObjects;
-using VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCore.Configuration;
-using VigiaPlatform.API.Shared.Domain.Repositories;
-
-public record TelemetryReport(string GpsDeviceId, [property: System.Text.Json.Serialization.JsonRequired] double Latitude, [property: System.Text.Json.Serialization.JsonRequired] double Longitude, DateTimeOffset? Timestamp);
-
-[ApiController]
-[Route("api/v1/telemetry/reports")]
-[Authorize(Roles = "ADMIN,WAREHOUSE_MANAGER")]
-public class TelemetryController(AppDbContext db, IUnitOfWork unitOfWork, ILogger<TelemetryController> logger) : ControllerBase
+using MySql.Data.MySqlClient;
+using VigiaPlatform.API.FleetAndDeviceRegistry.Domain.Exceptions;
+using VigiaPlatform.API.TransitTraceability.Domain.Exceptions;
+using VigiaPlatform.API.TransitTraceability.Infrastructure.Integration;
+public record TelemetryReport(string GpsDeviceId,
+    [property:System.Text.Json.Serialization.JsonRequired] double Latitude,
+    [property:System.Text.Json.Serialization.JsonRequired] double Longitude,
+    DateTimeOffset? Timestamp, double? SpeedKmh=null);
+[ApiController,Route("api/v1/telemetry/reports"),Authorize(Roles="ADMIN,WAREHOUSE_MANAGER")]
+public class TelemetryController(DispatchTransitService service) : ControllerBase
 {
     [HttpPost]
-    public async Task<IActionResult> Report(TelemetryReport input, CancellationToken ct)
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Report(TelemetryReport input,CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(input.GpsDeviceId) || input.GpsDeviceId.Length > 64)
-            throw new ArgumentException("GPS device ID is required and must not exceed 64 characters.");
-        var position = new Location(input.Latitude, input.Longitude);
-        var device = input.GpsDeviceId.Trim().ToUpperInvariant();
-        var vehicle = await db.Vehicles.SingleOrDefaultAsync(v => v.GpsDeviceId == device, ct);
-        if (vehicle is null)
-        {
-            db.Add(new Domain.Model.Entities.UnassociatedTelemetryEvent(device, position, input.Timestamp ?? DateTimeOffset.UtcNow));
-            await unitOfWork.CompleteAsync(ct);
-            logger.LogInformation("Telemetry from unpaired device {DeviceId} was retained for inspection", device);
-            return Ok(new { accepted = false, recorded = true, reason = "UNPAIRED_DEVICE" });
-        }
-        vehicle.UpdatePosition(position);
-        await unitOfWork.CompleteAsync(ct);
-        return Ok(new { accepted = true, vehicleId = vehicle.Id });
+        try { return Ok(await service.ReportAsync(input.GpsDeviceId,input.Latitude,input.Longitude,input.Timestamp,input.SpeedKmh,User.FindFirstValue("company_id")??"",ct)); }
+        catch(TripException ex) { return StatusCode(ex.Status,new {code=ex.Code,message=ex.Message}); }
+        catch(FleetException ex) { return BadRequest(new {code=ex.Code,message=ex.Message}); }
+        catch(TransitTraceabilityException ex) { return Conflict(new {code=ex.Code,message=ex.Message}); }
+        catch(DbUpdateConcurrencyException) { return Conflict(new {code="CONCURRENT_TRIP_CHANGE",message="Refresh and retry the report."}); }
+        catch(DbUpdateException ex) when(ex.GetBaseException() is MySqlException {Number:1062 or 1205 or 1213})
+        { return Conflict(new {code="CONCURRENT_TRIP_CHANGE",message="A concurrent report or trip change prevented this write."}); }
     }
 }

@@ -9,7 +9,7 @@ using VigiaPlatform.API.Shared.Domain.Repositories;
 using Microsoft.EntityFrameworkCore;
 using MySql.Data.MySqlClient;
 
-public class VehicleCommandService(IVehicleRepository vehicleRepository, IUnitOfWork unitOfWork) : IVehicleCommandService
+public class VehicleCommandService(IVehicleRepository vehicleRepository, IUnitOfWork unitOfWork, IVehicleTripGuard tripGuard) : IVehicleCommandService
 {
     public async Task<Vehicle?> Handle(RegisterVehicleCommand command, CancellationToken cancellationToken = default)
     {
@@ -57,6 +57,7 @@ public class VehicleCommandService(IVehicleRepository vehicleRepository, IUnitOf
             throw new FleetException(FleetErrorCodes.DeviceAlreadyAssigned,
                 $"GPS device '{gpsDevice.Value}' is already assigned to vehicle '{assignedVehicle.LicensePlate.Value}'.") { AssignedLicensePlate = assignedVehicle.LicensePlate.Value };
 
+        if (vehicle.GpsDeviceId != gpsDevice.Value) await tripGuard.EnsureUnlockedAsync(vehicle.Id, cancellationToken);
         vehicle.PairGpsDevice(gpsDevice.Value);
 
         vehicleRepository.Update(vehicle);
@@ -70,6 +71,7 @@ public class VehicleCommandService(IVehicleRepository vehicleRepository, IUnitOf
             ?? throw new FleetException(FleetErrorCodes.VehicleNotFound,
                 $"Vehicle with ID {command.VehicleId} was not found.");
 
+        await tripGuard.EnsureUnlockedAsync(vehicle.Id, cancellationToken);
         var location = new Location(command.Latitude, command.Longitude);
         vehicle.UpdatePosition(location);
 
@@ -80,6 +82,7 @@ public class VehicleCommandService(IVehicleRepository vehicleRepository, IUnitOf
     private async Task SaveAsync(string plate, string? gps, CancellationToken ct)
     {
         try { await unitOfWork.CompleteAsync(ct); }
+        catch (DbUpdateConcurrencyException) { throw new FleetException(FleetErrorCodes.ConcurrentModification, "Refresh and retry after a concurrent tracking change."); }
         catch (DbUpdateException ex) when (ex.GetBaseException() is MySqlException { Number: 1062 })
         {
             var owner = string.IsNullOrWhiteSpace(gps) ? null : await vehicleRepository.FindByGpsDeviceIdAsync(gps, ct);

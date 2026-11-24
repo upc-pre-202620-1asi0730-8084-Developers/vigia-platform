@@ -13,7 +13,7 @@ public class RouteRepository(AppDbContext context) : BaseRepository<TransitRoute
     /// Routes with their children loaded in chronological order, as the aggregate expects them.
     /// </summary>
     private IQueryable<TransitRoute> WithDetails() =>
-        Context.Set<TransitRoute>()
+        Context.Set<TransitRoute>().Include(r => r.Trip)
             .Include(r => r.Waypoints.OrderBy(w => w.Sequence))
             .Include(r => r.Positions.OrderBy(p => p.ReportedAt).ThenBy(p => p.Id))
             .Include(r => r.Alerts.OrderBy(a => a.DetectedAt).ThenBy(a => a.Id))

@@ -104,6 +104,8 @@ builder.Services.AddScoped<
 
 builder.Services.AddScoped<IVehicleRepository, VehicleRepository>();
 builder.Services.AddScoped<IGeofenceRepository, GeofenceRepository>();
+builder.Services.AddScoped<IVehicleTripGuard, VigiaPlatform.API.TransitTraceability.Infrastructure.Integration.VehicleTripGuard>();
+builder.Services.AddScoped<VigiaPlatform.API.TransitTraceability.Infrastructure.Integration.DispatchTransitService>();
 builder.Services.AddScoped<IVehicleCommandService, VehicleCommandService>();
 builder.Services.AddScoped<IGeofenceCommandService, GeofenceCommandService>();
 builder.Services.AddScoped<IVehicleQueryService, VehicleQueryService>();

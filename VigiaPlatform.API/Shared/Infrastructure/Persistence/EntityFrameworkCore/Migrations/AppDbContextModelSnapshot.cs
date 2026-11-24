@@ -261,6 +261,16 @@ namespace VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCor
                         .HasColumnType("varchar(100)")
                         .HasColumnName("model");
 
+                    b.Property<DateTime?>("PositionReportedAt")
+                        .HasPrecision(6)
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("position_reported_at");
+
+                    b.Property<long>("PositionVersion")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint")
+                        .HasColumnName("position_version");
+
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("datetime")
                         .HasColumnName("updated_at");
@@ -1399,8 +1409,9 @@ namespace VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCor
                         .HasColumnType("int")
                         .HasColumnName("id");
 
-                    b.Property<DateTimeOffset?>("ArrivedAt")
-                        .HasColumnType("datetime")
+                    b.Property<DateTime?>("ArrivedAt")
+                        .HasPrecision(6)
+                        .HasColumnType("datetime(6)")
                         .HasColumnName("arrived_at");
 
                     b.Property<DateTimeOffset?>("CreatedAt")
@@ -1421,8 +1432,9 @@ namespace VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCor
                         .HasColumnType("varchar(40)")
                         .HasColumnName("dispatch_id");
 
-                    b.Property<DateTimeOffset>("EstimatedArrival")
-                        .HasColumnType("datetime")
+                    b.Property<DateTime>("EstimatedArrival")
+                        .HasPrecision(6)
+                        .HasColumnType("datetime(6)")
                         .HasColumnName("estimated_arrival");
 
                     b.Property<string>("OriginName")
@@ -1431,8 +1443,9 @@ namespace VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCor
                         .HasColumnType("varchar(150)")
                         .HasColumnName("origin_name");
 
-                    b.Property<DateTimeOffset>("StartedAt")
-                        .HasColumnType("datetime")
+                    b.Property<DateTime>("StartedAt")
+                        .HasPrecision(6)
+                        .HasColumnType("datetime(6)")
                         .HasColumnName("started_at");
 
                     b.Property<string>("Status")
@@ -1458,6 +1471,11 @@ namespace VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCor
                         .HasMaxLength(20)
                         .HasColumnType("varchar(20)")
                         .HasColumnName("vehicle_plate");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint")
+                        .HasColumnName("version");
 
                     b.ComplexProperty(typeof(Dictionary<string, object>), "Destination", "VigiaPlatform.API.TransitTraceability.Domain.Model.Aggregates.TransitRoute.Destination#Destination", b1 =>
                         {
@@ -1490,6 +1508,79 @@ namespace VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCor
                         .HasDatabaseName("uq_routes_dispatch_id");
 
                     b.ToTable("routes", (string)null);
+                });
+
+            modelBuilder.Entity("VigiaPlatform.API.TransitTraceability.Domain.Model.Entities.DispatchTrip", b =>
+                {
+                    b.Property<int>("DispatchId")
+                        .HasColumnType("int")
+                        .HasColumnName("dispatch_id");
+
+                    b.Property<int?>("ActiveVehicleId")
+                        .HasColumnType("int")
+                        .HasColumnName("active_vehicle_id");
+
+                    b.Property<DateTime>("DepartedAt")
+                        .HasPrecision(6)
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("departed_at");
+
+                    b.Property<string>("EndReason")
+                        .HasMaxLength(40)
+                        .HasColumnType("varchar(40)")
+                        .HasColumnName("end_reason");
+
+                    b.Property<DateTime?>("EndedAt")
+                        .HasPrecision(6)
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("ended_at");
+
+                    b.Property<string>("GpsDeviceId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("gps_device_id");
+
+                    b.Property<int>("OriginGeofenceId")
+                        .HasColumnType("int")
+                        .HasColumnName("origin_geofence_id");
+
+                    b.Property<string>("RequestFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("request_fingerprint");
+
+                    b.Property<Guid>("RequestId")
+                        .HasColumnType("char(36)")
+                        .HasColumnName("request_id");
+
+                    b.Property<int>("RouteId")
+                        .HasColumnType("int")
+                        .HasColumnName("route_id");
+
+                    b.Property<string>("StartedBy")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("varchar(150)")
+                        .HasColumnName("started_by");
+
+                    b.Property<int>("VehicleId")
+                        .HasColumnType("int")
+                        .HasColumnName("vehicle_id");
+
+                    b.HasKey("DispatchId")
+                        .HasName("pk_dispatch_trips");
+
+                    b.HasIndex("ActiveVehicleId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_dispatch_trips_active_vehicle_id");
+
+                    b.HasIndex("RouteId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_dispatch_trips_route_id");
+
+                    b.ToTable("dispatch_trips", (string)null);
                 });
 
             modelBuilder.Entity("VigiaPlatform.API.TransitTraceability.Domain.Model.Entities.RouteWaypoint", b =>
@@ -1539,8 +1630,9 @@ namespace VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCor
                         .HasColumnType("double")
                         .HasColumnName("longitude");
 
-                    b.Property<DateTimeOffset>("ReportedAt")
-                        .HasColumnType("datetime")
+                    b.Property<DateTime>("ReportedAt")
+                        .HasPrecision(6)
+                        .HasColumnType("datetime(6)")
                         .HasColumnName("reported_at");
 
                     b.Property<int>("RouteId")
@@ -1567,8 +1659,9 @@ namespace VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCor
                         .HasColumnType("int")
                         .HasColumnName("id");
 
-                    b.Property<DateTimeOffset>("DetectedAt")
-                        .HasColumnType("datetime")
+                    b.Property<DateTime>("DetectedAt")
+                        .HasPrecision(6)
+                        .HasColumnType("datetime(6)")
                         .HasColumnName("detected_at");
 
                     b.Property<double?>("Latitude")
@@ -1579,8 +1672,9 @@ namespace VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCor
                         .HasColumnType("double")
                         .HasColumnName("longitude");
 
-                    b.Property<DateTimeOffset?>("NotifiedAt")
-                        .HasColumnType("datetime")
+                    b.Property<DateTime?>("NotifiedAt")
+                        .HasPrecision(6)
+                        .HasColumnType("datetime(6)")
                         .HasColumnName("notified_at");
 
                     b.Property<int>("RouteId")
@@ -1986,6 +2080,18 @@ namespace VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCor
                         .HasConstraintName("fk_reception_items_receptions_reception_id");
                 });
 
+            modelBuilder.Entity("VigiaPlatform.API.TransitTraceability.Domain.Model.Entities.DispatchTrip", b =>
+                {
+                    b.HasOne("VigiaPlatform.API.TransitTraceability.Domain.Model.Aggregates.TransitRoute", "Route")
+                        .WithOne("Trip")
+                        .HasForeignKey("VigiaPlatform.API.TransitTraceability.Domain.Model.Entities.DispatchTrip", "RouteId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_dispatch_trips_routes_route_id");
+
+                    b.Navigation("Route");
+                });
+
             modelBuilder.Entity("VigiaPlatform.API.TransitTraceability.Domain.Model.Entities.RouteWaypoint", b =>
                 {
                     b.HasOne("VigiaPlatform.API.TransitTraceability.Domain.Model.Aggregates.TransitRoute", null)
@@ -2053,6 +2159,8 @@ namespace VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCor
                     b.Navigation("Alerts");
 
                     b.Navigation("Positions");
+
+                    b.Navigation("Trip");
 
                     b.Navigation("Waypoints");
                 });
