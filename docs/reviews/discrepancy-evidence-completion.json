@@ -1,0 +1,46 @@
+{
+  "task": 15,
+  "dateLocal": "2026-11-24",
+  "owner": "Elias",
+  "githubAccount": "eliocerdan",
+  "branch": "feature/discrepancy-evidence-completion",
+  "status": "Implemented and verified locally; final external reception integration remains row16",
+  "resolvedFindingIds": [
+    "F13-04"
+  ],
+  "implementedFindingIdsPendingExternalIntegration": [
+    "F13-05"
+  ],
+  "remainingExternalFindings": [
+    "F13-02",
+    "F13-03",
+    "F13-06",
+    "F13-07"
+  ],
+  "andreDeliveryReceived": false,
+  "verification": {
+    "evidenceHttpChecks": 106,
+    "existingFlowHttpChecks": 82,
+    "frontendTests": 19,
+    "frontendBuild": "Pass; existing chunk-size warning",
+    "nativeMySqlAtomicity": "Pass: failed audit rolls back file bytes and reception evidence; retry commits linkage",
+    "migration": "12 to 13 on clone; all 29 existing table counts and dispatch states preserved; no invented files",
+    "browser": "Actual multipart upload, discrepancy report, ES/EN, authenticated photo display after API restart, download SHA256 equals original PNG",
+    "uncertainResponse": "Exact UUID replay and two simultaneous exact uploads return one file; browser timeout-response-loss injection not performed"
+  },
+  "storage": {
+    "provider": "Existing MySQL database; additive stored_evidence_files mediumblob table",
+    "formats": [
+      "image/jpeg",
+      "image/png"
+    ],
+    "maximumBytes": 5242880,
+    "maximumPixels": 16000000,
+    "maximumPhotosPerReception": 20,
+    "validation": "Media type, extension, PNG/JPEG signatures and dimensions; no claim of complete image decoder/antivirus inspection",
+    "atomicity": "File, reception evidence and activity share transaction",
+    "retry": "Unique receptionId/requestId; fingerprint of normalized filename, caption, SHA256 and content type"
+  },
+  "authorization": "Actual case -> reception -> project.ManagerId, or administrator; unrelated resident gets404; warehouse role403. Download sends private,no-store and nosniff. Legacy reception list/register/compare/verify are Andre scope, not fixed here.",
+  "scope": "Local MySQL and browser only. No production deployment, release or Azure VM activation."
+}
