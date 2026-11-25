@@ -1,0 +1,20 @@
+{
+  "httpChecks": 10,
+  "conformant": {
+    "receptionId": 7,
+    "status": "ConformantClosed",
+    "dispatchId": 14,
+    "dispatchStatus": "COMPLETED",
+    "routeTrackingActive": false
+  },
+  "discrepant": {
+    "receptionId": 8,
+    "status": "DiscrepancyReported",
+    "caseId": 4,
+    "caseNumber": "CASE-c58a9286fe70429891851d87f1682790",
+    "storedPhotoId": "819689b0-5120-4ac8-9ef8-027cfe28bd04",
+    "pdfSha256": "1be906efaf40731c3c2d1776dac9af4eaf179e3d0228a5d8647f401427c3ba42",
+    "storedPhotoAndCaptionInPdf": true
+  },
+  "browserPdfDownload": "Download event wait interrupted by automation reset; button clicked separately with no browser errors. Artifact PDF retrieved and verified through authenticated HTTP."
+}
