@@ -1,0 +1,1005 @@
+{
+  "scope": "Local isolated database. Anonymous, administrator, warehouse, assigned and unassigned resident boundaries.",
+  "httpChecks": 110,
+  "checks": [
+    {
+      "role": "setup",
+      "method": "POST",
+      "path": "/authentication/sign-in",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "setup",
+      "method": "POST",
+      "path": "/authentication/sign-in",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "setup",
+      "method": "POST",
+      "path": "/authentication/sign-in",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "setup",
+      "method": "POST",
+      "path": "/authentication/sign-up",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "setup",
+      "method": "POST",
+      "path": "/authentication/sign-in",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "admin",
+      "method": "GET",
+      "path": "/users/me",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "warehouse",
+      "method": "GET",
+      "path": "/users/me",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "site",
+      "method": "GET",
+      "path": "/users/me",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "outsider",
+      "method": "GET",
+      "path": "/users/me",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "invalid-token",
+      "method": "GET",
+      "path": "/users/me",
+      "expected": [
+        401
+      ],
+      "actual": 401
+    },
+    {
+      "role": "admin",
+      "method": "GET",
+      "path": "/users",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "warehouse",
+      "method": "GET",
+      "path": "/users",
+      "expected": [
+        403
+      ],
+      "actual": 403
+    },
+    {
+      "role": "site",
+      "method": "GET",
+      "path": "/users",
+      "expected": [
+        403
+      ],
+      "actual": 403
+    },
+    {
+      "role": "outsider",
+      "method": "GET",
+      "path": "/users",
+      "expected": [
+        403
+      ],
+      "actual": 403
+    },
+    {
+      "role": "anonymous",
+      "method": "GET",
+      "path": "/users",
+      "expected": [
+        401
+      ],
+      "actual": 401
+    },
+    {
+      "role": "admin",
+      "method": "GET",
+      "path": "/materials",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "warehouse",
+      "method": "GET",
+      "path": "/materials",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "site",
+      "method": "GET",
+      "path": "/materials",
+      "expected": [
+        403
+      ],
+      "actual": 403
+    },
+    {
+      "role": "outsider",
+      "method": "GET",
+      "path": "/materials",
+      "expected": [
+        403
+      ],
+      "actual": 403
+    },
+    {
+      "role": "anonymous",
+      "method": "GET",
+      "path": "/materials",
+      "expected": [
+        401
+      ],
+      "actual": 401
+    },
+    {
+      "role": "admin",
+      "method": "GET",
+      "path": "/vehicles",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "warehouse",
+      "method": "GET",
+      "path": "/vehicles",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "site",
+      "method": "GET",
+      "path": "/vehicles",
+      "expected": [
+        403
+      ],
+      "actual": 403
+    },
+    {
+      "role": "outsider",
+      "method": "GET",
+      "path": "/vehicles",
+      "expected": [
+        403
+      ],
+      "actual": 403
+    },
+    {
+      "role": "anonymous",
+      "method": "GET",
+      "path": "/vehicles",
+      "expected": [
+        401
+      ],
+      "actual": 401
+    },
+    {
+      "role": "admin",
+      "method": "GET",
+      "path": "/geofences",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "warehouse",
+      "method": "GET",
+      "path": "/geofences",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "site",
+      "method": "GET",
+      "path": "/geofences",
+      "expected": [
+        403
+      ],
+      "actual": 403
+    },
+    {
+      "role": "outsider",
+      "method": "GET",
+      "path": "/geofences",
+      "expected": [
+        403
+      ],
+      "actual": 403
+    },
+    {
+      "role": "anonymous",
+      "method": "GET",
+      "path": "/geofences",
+      "expected": [
+        401
+      ],
+      "actual": 401
+    },
+    {
+      "role": "admin",
+      "method": "GET",
+      "path": "/dispatches",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "warehouse",
+      "method": "GET",
+      "path": "/dispatches",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "site",
+      "method": "GET",
+      "path": "/dispatches",
+      "expected": [
+        403
+      ],
+      "actual": 403
+    },
+    {
+      "role": "outsider",
+      "method": "GET",
+      "path": "/dispatches",
+      "expected": [
+        403
+      ],
+      "actual": 403
+    },
+    {
+      "role": "anonymous",
+      "method": "GET",
+      "path": "/dispatches",
+      "expected": [
+        401
+      ],
+      "actual": 401
+    },
+    {
+      "role": "admin",
+      "method": "GET",
+      "path": "/orders",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "warehouse",
+      "method": "GET",
+      "path": "/orders",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "site",
+      "method": "GET",
+      "path": "/orders",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "outsider",
+      "method": "GET",
+      "path": "/orders",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "anonymous",
+      "method": "GET",
+      "path": "/orders",
+      "expected": [
+        401
+      ],
+      "actual": 401
+    },
+    {
+      "role": "admin",
+      "method": "GET",
+      "path": "/projects",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "warehouse",
+      "method": "GET",
+      "path": "/projects",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "site",
+      "method": "GET",
+      "path": "/projects",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "outsider",
+      "method": "GET",
+      "path": "/projects",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "anonymous",
+      "method": "GET",
+      "path": "/projects",
+      "expected": [
+        401
+      ],
+      "actual": 401
+    },
+    {
+      "role": "admin",
+      "method": "GET",
+      "path": "/receptions",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "warehouse",
+      "method": "GET",
+      "path": "/receptions",
+      "expected": [
+        403
+      ],
+      "actual": 403
+    },
+    {
+      "role": "site",
+      "method": "GET",
+      "path": "/receptions",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "outsider",
+      "method": "GET",
+      "path": "/receptions",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "anonymous",
+      "method": "GET",
+      "path": "/receptions",
+      "expected": [
+        401
+      ],
+      "actual": 401
+    },
+    {
+      "role": "admin",
+      "method": "GET",
+      "path": "/upcoming-arrivals",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "warehouse",
+      "method": "GET",
+      "path": "/upcoming-arrivals",
+      "expected": [
+        403
+      ],
+      "actual": 403
+    },
+    {
+      "role": "site",
+      "method": "GET",
+      "path": "/upcoming-arrivals",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "outsider",
+      "method": "GET",
+      "path": "/upcoming-arrivals",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "anonymous",
+      "method": "GET",
+      "path": "/upcoming-arrivals",
+      "expected": [
+        401
+      ],
+      "actual": 401
+    },
+    {
+      "role": "admin",
+      "method": "GET",
+      "path": "/discrepancy-cases",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "warehouse",
+      "method": "GET",
+      "path": "/discrepancy-cases",
+      "expected": [
+        403
+      ],
+      "actual": 403
+    },
+    {
+      "role": "site",
+      "method": "GET",
+      "path": "/discrepancy-cases",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "outsider",
+      "method": "GET",
+      "path": "/discrepancy-cases",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "anonymous",
+      "method": "GET",
+      "path": "/discrepancy-cases",
+      "expected": [
+        401
+      ],
+      "actual": 401
+    },
+    {
+      "role": "admin",
+      "method": "GET",
+      "path": "/activity-records",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "warehouse",
+      "method": "GET",
+      "path": "/activity-records",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "site",
+      "method": "GET",
+      "path": "/activity-records",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "outsider",
+      "method": "GET",
+      "path": "/activity-records",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "anonymous",
+      "method": "GET",
+      "path": "/activity-records",
+      "expected": [
+        401
+      ],
+      "actual": 401
+    },
+    {
+      "role": "admin",
+      "method": "GET",
+      "path": "/routes",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "warehouse",
+      "method": "GET",
+      "path": "/routes",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "site",
+      "method": "GET",
+      "path": "/routes",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "outsider",
+      "method": "GET",
+      "path": "/routes",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "anonymous",
+      "method": "GET",
+      "path": "/routes",
+      "expected": [
+        401
+      ],
+      "actual": 401
+    },
+    {
+      "role": "site",
+      "method": "GET",
+      "path": "/orders/request-catalog",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "outsider",
+      "method": "GET",
+      "path": "/orders/request-catalog",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "site",
+      "method": "POST",
+      "path": "/orders/requests",
+      "expected": [
+        201
+      ],
+      "actual": 201
+    },
+    {
+      "role": "admin",
+      "method": "GET",
+      "path": "/orders/6",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "warehouse",
+      "method": "GET",
+      "path": "/orders/6",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "site",
+      "method": "GET",
+      "path": "/orders/6",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "outsider",
+      "method": "GET",
+      "path": "/orders/6",
+      "expected": [
+        404
+      ],
+      "actual": 404
+    },
+    {
+      "role": "anonymous",
+      "method": "GET",
+      "path": "/orders/6",
+      "expected": [
+        401
+      ],
+      "actual": 401
+    },
+    {
+      "role": "site",
+      "method": "PATCH",
+      "path": "/orders/6/status",
+      "expected": [
+        403
+      ],
+      "actual": 403
+    },
+    {
+      "role": "admin",
+      "method": "GET",
+      "path": "/receptions/3",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "warehouse",
+      "method": "GET",
+      "path": "/receptions/3",
+      "expected": [
+        403
+      ],
+      "actual": 403
+    },
+    {
+      "role": "site",
+      "method": "GET",
+      "path": "/receptions/3",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "outsider",
+      "method": "GET",
+      "path": "/receptions/3",
+      "expected": [
+        404
+      ],
+      "actual": 404
+    },
+    {
+      "role": "anonymous",
+      "method": "GET",
+      "path": "/receptions/3",
+      "expected": [
+        401
+      ],
+      "actual": 401
+    },
+    {
+      "role": "admin",
+      "method": "GET",
+      "path": "/receptions/3/evidence-context",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "warehouse",
+      "method": "GET",
+      "path": "/receptions/3/evidence-context",
+      "expected": [
+        403
+      ],
+      "actual": 403
+    },
+    {
+      "role": "site",
+      "method": "GET",
+      "path": "/receptions/3/evidence-context",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "outsider",
+      "method": "GET",
+      "path": "/receptions/3/evidence-context",
+      "expected": [
+        404
+      ],
+      "actual": 404
+    },
+    {
+      "role": "anonymous",
+      "method": "GET",
+      "path": "/receptions/3/evidence-context",
+      "expected": [
+        401
+      ],
+      "actual": 401
+    },
+    {
+      "role": "admin",
+      "method": "GET",
+      "path": "/discrepancy-cases/2",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "warehouse",
+      "method": "GET",
+      "path": "/discrepancy-cases/2",
+      "expected": [
+        403
+      ],
+      "actual": 403
+    },
+    {
+      "role": "site",
+      "method": "GET",
+      "path": "/discrepancy-cases/2",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "outsider",
+      "method": "GET",
+      "path": "/discrepancy-cases/2",
+      "expected": [
+        404
+      ],
+      "actual": 404
+    },
+    {
+      "role": "anonymous",
+      "method": "GET",
+      "path": "/discrepancy-cases/2",
+      "expected": [
+        401
+      ],
+      "actual": 401
+    },
+    {
+      "role": "admin",
+      "method": "GET",
+      "path": "/discrepancy-cases/2/timeline",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "warehouse",
+      "method": "GET",
+      "path": "/discrepancy-cases/2/timeline",
+      "expected": [
+        403
+      ],
+      "actual": 403
+    },
+    {
+      "role": "site",
+      "method": "GET",
+      "path": "/discrepancy-cases/2/timeline",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "outsider",
+      "method": "GET",
+      "path": "/discrepancy-cases/2/timeline",
+      "expected": [
+        404
+      ],
+      "actual": 404
+    },
+    {
+      "role": "anonymous",
+      "method": "GET",
+      "path": "/discrepancy-cases/2/timeline",
+      "expected": [
+        401
+      ],
+      "actual": 401
+    },
+    {
+      "role": "admin",
+      "method": "GET",
+      "path": "/discrepancy-cases/2/report",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "warehouse",
+      "method": "GET",
+      "path": "/discrepancy-cases/2/report",
+      "expected": [
+        403
+      ],
+      "actual": 403
+    },
+    {
+      "role": "site",
+      "method": "GET",
+      "path": "/discrepancy-cases/2/report",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "outsider",
+      "method": "GET",
+      "path": "/discrepancy-cases/2/report",
+      "expected": [
+        404
+      ],
+      "actual": 404
+    },
+    {
+      "role": "anonymous",
+      "method": "GET",
+      "path": "/discrepancy-cases/2/report",
+      "expected": [
+        401
+      ],
+      "actual": 401
+    },
+    {
+      "role": "admin",
+      "method": "GET",
+      "path": "/receptions/3/evidence/files/9d6431ff-d009-4782-b566-01b9974261c2",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "warehouse",
+      "method": "GET",
+      "path": "/receptions/3/evidence/files/9d6431ff-d009-4782-b566-01b9974261c2",
+      "expected": [
+        403
+      ],
+      "actual": 403
+    },
+    {
+      "role": "site",
+      "method": "GET",
+      "path": "/receptions/3/evidence/files/9d6431ff-d009-4782-b566-01b9974261c2",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    },
+    {
+      "role": "outsider",
+      "method": "GET",
+      "path": "/receptions/3/evidence/files/9d6431ff-d009-4782-b566-01b9974261c2",
+      "expected": [
+        404
+      ],
+      "actual": 404
+    },
+    {
+      "role": "anonymous",
+      "method": "GET",
+      "path": "/receptions/3/evidence/files/9d6431ff-d009-4782-b566-01b9974261c2",
+      "expected": [
+        401
+      ],
+      "actual": 401
+    },
+    {
+      "role": "public-documentation",
+      "method": "GET",
+      "path": "/openapi/v1.json",
+      "expected": [
+        200
+      ],
+      "actual": 200
+    }
+  ],
+  "protectedOpenApiOperations": 73,
+  "fixtures": {
+    "orderId": 6,
+    "receptionId": 3,
+    "caseId": 2,
+    "photoId": "9d6431ff-d009-4782-b566-01b9974261c2"
+  },
+  "tokensIncluded": false,
+  "publicEndpointsRemainAnonymous": true
+}

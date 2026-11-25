@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 
@@ -24,7 +25,10 @@ public static class OpenApiBearerConfiguration
         options.AddOperationTransformer((operation, context, cancellationToken) =>
         {
             var metadata = context.Description.ActionDescriptor.EndpointMetadata;
-            if (metadata.OfType<IAuthorizeData>().Any() && !metadata.OfType<IAllowAnonymous>().Any())
+            // MapControllers().RequireAuthorization() also protects actions without a local attribute.
+            var protectedEndpoint = context.Description.ActionDescriptor is ControllerActionDescriptor
+                || metadata.OfType<IAuthorizeData>().Any();
+            if (protectedEndpoint && !metadata.OfType<IAllowAnonymous>().Any())
             {
                 operation.Security ??= [];
                 operation.Security.Add(new OpenApiSecurityRequirement

@@ -1,0 +1,68 @@
+{
+  "task": 20,
+  "dateLocal": "2026-11-24",
+  "coordinator": "Fabian Sandoval",
+  "githubAccount": "JFabianSandoval",
+  "branch": "feature/role-regression-scalar",
+  "status": "Local role regression and Scalar captures complete; actual Azure publication remains row21",
+  "baselines": {
+    "backendDevelop": "adb3d6db80fc9472290d47b8bc156f1a0d408acb",
+    "frontendDevelop": "7c5b8830aaafb154488740b8c18d5b7402e31544"
+  },
+  "changes": [
+    {
+      "id": "F20-01",
+      "scope": "backend",
+      "result": "OpenAPI now includes controller actions protected by MapControllers().RequireAuthorization(), including users/me and activity-records. Anonymous sign-in/sign-up and health stay public. Runtime permissions unchanged."
+    },
+    {
+      "id": "F20-02",
+      "scope": "frontend",
+      "result": "Reception tables scroll within their allocated column instead of overlapping the detail panel. Both site-manager and supervisor perspectives checked at1280px."
+    }
+  ],
+  "verification": {
+    "candidateHttp": 371,
+    "roleMatrixHttp": 110,
+    "browserResultHttp": 10,
+    "productionLocalHttp": 16,
+    "totalHttp": 507,
+    "protectedOpenApiOperations": 73,
+    "frontendTests": 30,
+    "frontendBuild": "Pass; existing large-chunk warning remains",
+    "roles": [
+      "ADMIN",
+      "WAREHOUSE_MANAGER",
+      "assigned SITE_MANAGER",
+      "unassigned SITE_MANAGER",
+      "anonymous",
+      "invalid token"
+    ],
+    "matrix": "110 checks: list/read roles, own/foreign order, reception, evidence context, case, timeline, stored image and PDF. Allowed200/201, absent/invalid401, wrong role403, foreign object404. Image SHA256 and PDF body verified.",
+    "browser": [
+      "Real sign-in for site.local, warehouse.local and admin.local; appropriate navigation and administrator overview.",
+      "Site: dispatch14 receipt7,4/4u registered and confirmed; persisted ConformantClosed, dispatch COMPLETED and route tracking inactive.",
+      "Site: dispatch15 receipt8,4/3u; actual PNG upload then discrepancy created case4. Linked case shows photo and caption; PDF contains stored-photo identifier and caption. Image and GPS are simulated test fixtures.",
+      "Warehouse sees DS14 Delivered; direct navigation to receptions redirects Home.",
+      "Scalar real sends: users/me401 without token, warehouse identity200, warehouse users403, administrator users200; Fleet vehicles200, Orders200, Routes200, resident Receptions200 and Cases200.",
+      "Reception table scrollWidth>clientWidth with overflow-x:auto in both perspectives. Updated screenshots are the accepted layout."
+    ],
+    "downloadLimitation": "Download event wait interrupted by automation reset; button clicked separately with no browser errors. Artifact PDF retrieved and verified through authenticated HTTP.",
+    "scope": "Isolated MySQL database vigia_local_roles_20261124; no physical IoT, production data, cloud deployment or complete A12/WCAG audit."
+  },
+  "evidence": {
+    "backend": "docs/evidence/row20:10 Scalar JPEG captures, matrix JSON, browser verification JSON, case4 PDF",
+    "frontend": "docs/evidence/row20:5 accepted frontend JPEG captures, matrix/browser JSON",
+    "reproduce": "Start separate local API with scripts/start-local.ps1. Run verify-candidate.py --url http://localhost:5184/api/v1 --allow-local-writes, then verify-role-access.py --allow-local-writes --wait-for-auth-window. Credentials remain ignored in .local/access.json."
+  },
+  "remainingGates": [
+    "Row21: approve versions, verify real backup/recovery, migrate and deploy Azure/frontend, then verify public URLs.",
+    "Final screenshots against published URLs belong to deployment verification, not this local test evidence.",
+    "Andree A12 full usability/landing and other report/video deliverables retain their independent status."
+  ],
+  "publication": {
+    "mainChanged": false,
+    "releaseCreated": false,
+    "azureDeployed": false
+  }
+}
