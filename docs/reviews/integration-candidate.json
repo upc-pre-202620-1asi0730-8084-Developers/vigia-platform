@@ -1,0 +1,46 @@
+{
+  "task": 18,
+  "dateLocal": "2026-11-24",
+  "coordinator": "Fabian Sandoval",
+  "githubAccount": "JFabianSandoval",
+  "branch": "fix/integration-regressions",
+  "status": "Local integration candidate verified; publication is row21",
+  "baselines": {
+    "backendDevelop": "3043e959ade68d057eaf007e2b31b9bb28a908e1",
+    "frontendDevelop": "9dcc61de507571594ab0b5e0242365cfcc13a6d7",
+    "backendVersion": "1.0.0",
+    "frontendVersion": "2.1.0",
+    "migrations": 14
+  },
+  "fixes": [
+    {"id": "F18-01", "scope": "backend", "result": "OpenAPI declares opaque HTTP Bearer on authorized operations. Scalar shows the Bearer token input. Anonymous sign-in remains public; runtime permissions unchanged."},
+    {"id": "F18-02", "scope": "frontend", "result": "Dispatch list reloads on entry so an already-started trip no longer appears In preparation from cached state."},
+    {"id": "F18-03", "scope": "frontend", "result": "Weighing and guide links use a continuous inline-block target, including the space between wrapped lines. Mouse and Enter navigation verified."}
+  ],
+  "verification": {
+    "candidateHttp": {"scalarOpenApi": 8, "reception": 84, "evidence": 106, "dispatchTransit": 88, "general": 85, "total": 371},
+    "productionLocalHttp": 16,
+    "frontendTests": 30,
+    "backendBuild": "Pass: zero warnings, zero errors",
+    "frontendBuild": "Pass; existing chunk-size warning remains",
+    "nativeMySql": "Pass: migration chain, fleet/A01 domain, weighing/guide audit atomicity, trip concurrency and rollback, photo/audit retry, reception ownership/exact guide and conformant idempotent close with trip release",
+    "productionLocal": "Separate database, migrations, administrator bootstrap idempotency, no demo records, Firebase CORS, persisted key ring and Bearer surviving process restart",
+    "browser": "Resident creates order8 (4 units). Warehouse approves, creates dispatch24, assigns vehicle, records net100/expected100/tolerance2 kg, issues GD-00000024 and starts trip24 using warehouse/site circular geofences. Return to list shows In transit, preparation KPI2 and transit KPI13. Weighing link click and guide Enter/click work. Scalar exposes Bearer input.",
+    "rateLimit": "Initial combined run reached authentication429. Runner now respects the existing window between suite groups; final371-check run passed with rate limiting enabled. No security relaxation.",
+    "scope": "Isolated local MySQL fixtures; GPS is simulated HTTP telemetry, not real hardware. Browser traversal is order through departure; receipt, photo, case and PDF assertions are HTTP/native tests. No new cloud or full WCAG acceptance."
+  },
+  "reproduce": [
+    "Start scripts/start-local.ps1 with a separate local candidate database and port5179; keep private configuration outside Git.",
+    "Run python scripts/verify-candidate.py --allow-local-writes --wait-for-auth-window. It creates local fixtures and writes ignored .local/candidate-results.json.",
+    "Run scripts/verify-production.ps1 on a separate local port/database with the private configuration file.",
+    "Frontend: node --test scripts/*.test.mjs and node node_modules/vite/bin/vite.js build."
+  ],
+  "remainingGates": [
+    "Row19 is a reserved integration-blocker window, not an implementation claim.",
+    "Row20: final per-role regression and Scalar captures with the candidate.",
+    "Row21: approved versions, actual Azure migration/deployment and final URLs; validate real MySQL/photo/key-ring backup and recovery before publication.",
+    "Andree A04-A12, complete usability/landing review, final report/video and physical GPS acceptance retain their independently recorded status."
+  ],
+  "publication": {"mainChanged": false, "releaseCreated": false, "azureDeployed": false},
+  "reference": "https://learn.microsoft.com/en-us/aspnet/core/fundamentals/openapi/customize-openapi?view=aspnetcore-10.0"
+}

@@ -53,7 +53,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 builder.Services.AddControllers(options =>
     options.Conventions.Add(new KebabCaseRouteNamingConvention()));
 
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi(options => options.AddBearerAuthentication());
 builder.Services.AddIdentityAndAccessManagementContext();
 builder.Services.AddProjectManagementContext();
 builder.Services.AddInventoryManagementContext();
