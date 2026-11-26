@@ -18,6 +18,7 @@ using VigiaPlatform.API.IdentityAndAccessManagement;
 using VigiaPlatform.API.ProjectManagement;
 using VigiaPlatform.API.InventoryManagement;
 using VigiaPlatform.API.ActivityHistory;
+using VigiaPlatform.API.ContactRequests;
 using VigiaPlatform.API.Shared.Domain.Repositories;
 using VigiaPlatform.API.Shared.Infrastructure.Interfaces.Asp.Configuration;
 using VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCore.Configuration;
@@ -58,6 +59,7 @@ builder.Services.AddIdentityAndAccessManagementContext();
 builder.Services.AddProjectManagementContext();
 builder.Services.AddInventoryManagementContext();
 builder.Services.AddActivityHistoryContext();
+builder.Services.AddContactRequestsContext();
 builder.Services.AddExceptionHandler<ApiExceptionHandler>();
 builder.Services.AddProblemDetails();
 builder.Services.AddScoped<VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Infrastructure.Reporting.DiscrepancyReportService>();
@@ -71,7 +73,8 @@ builder.Services.AddCors(options => options.AddPolicy(
     FrontendCorsPolicy, policy => policy
         .WithOrigins(
             "http://localhost:5173",
-            "https://vigia-frontend-8084.web.app")
+            "https://vigia-frontend-8084.web.app",
+            "https://upc-pre-202620-1asi0730-8084-developers.github.io")
         .AllowAnyHeader()
         .AllowAnyMethod()));
 

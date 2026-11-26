@@ -57,6 +57,33 @@ if (!emptyGuidRejected) throw new Exception("Empty verify request ID was accepte
 a01DomainChecks++;
 Console.WriteLine($"PASS: {a01DomainChecks} A01 reception domain checks.");
 
+var a04MemRepo = new InMemoryContactRequestRepository();
+var a04Svc = new VigiaPlatform.API.ContactRequests.Application.ContactRequestService(a04MemRepo, new NoOpUnitOfWork());
+var a04Invalid = await a04Svc.CreateAsync(new(null, "", "", "bad-email", null, "", "BAD", "short", "es"));
+if (a04Invalid.ValidationErrors is null
+    || !a04Invalid.ValidationErrors.ContainsKey("fullName")
+    || !a04Invalid.ValidationErrors.ContainsKey("companyName")
+    || !a04Invalid.ValidationErrors.ContainsKey("email")
+    || !a04Invalid.ValidationErrors.ContainsKey("segment")
+    || !a04Invalid.ValidationErrors.ContainsKey("plan")
+    || !a04Invalid.ValidationErrors.ContainsKey("message"))
+    throw new Exception("A04 domain validation did not flag all invalid fields.");
+var a04ReqId = Guid.NewGuid().ToString("D");
+var a04Cmd = new VigiaPlatform.API.ContactRequests.Application.CreateContactRequestCommand(
+    a04ReqId, "Carlos Mendoza", "Constructora Andina SAC", "cmendoza@andina.pe",
+    "+51 987 654 321", "CONSTRUCTION", "PRO",
+    "Necesitamos trazabilidad de despachos y recepciones en obra.", "es");
+var a04Created = await a04Svc.CreateAsync(a04Cmd);
+if (a04Created.Request is null || a04Created.Request.Status != "RECEIVED")
+    throw new Exception("A04 valid contact request failed.");
+var a04Replay = await a04Svc.CreateAsync(a04Cmd);
+if (a04Replay.Request is null || a04Replay.Request.Id != a04Created.Request.Id)
+    throw new Exception("A04 idempotent replay failed.");
+var a04Conflict = await a04Svc.CreateAsync(a04Cmd with { CompanyName = "Otra SAC" });
+if (a04Conflict.ConflictCode != "REQUEST_ID_CONFLICT")
+    throw new Exception("A04 requestId conflict was not detected.");
+Console.WriteLine("PASS: 4 A04 contact-request service domain/validation/idempotency checks.");
+
 if (args.Length == 1 && args[0] == "--domain-only") return;
 if (args.Length != 1) throw new ArgumentException("Pass the path to the private local appsettings.Development.json file.");
 using var config = JsonDocument.Parse(await File.ReadAllTextAsync(args[0]));
@@ -516,4 +543,68 @@ using (var db = new AppDbContext(options))
         throw new Exception("Late telemetry appended to a trip closed by conformant reception.");
 }
 Console.WriteLine("PASS: A01 project ownership, authoritative delivery guide, atomic/idempotent conformant closure, and active-trip release verified.");
+
+// A04: Contact requests validation, persistence and idempotency checks
+using (var db = new AppDbContext(options))
+{
+    var contactRepo = new VigiaPlatform.API.ContactRequests.Infrastructure.Persistence.ContactRequestRepository(db);
+    var contactUow = new UnitOfWork(db, [new ActivityChangeRecorder(db, accessor)]);
+    var contactSvc = new VigiaPlatform.API.ContactRequests.Application.ContactRequestService(contactRepo, contactUow);
+
+    var invalid = await contactSvc.CreateAsync(new(null, "", "", "bad-email", null, "", "UNKNOWN", "short", "es"));
+    if (invalid.ValidationErrors is null
+        || !invalid.ValidationErrors.ContainsKey("fullName")
+        || !invalid.ValidationErrors.ContainsKey("companyName")
+        || !invalid.ValidationErrors.ContainsKey("email")
+        || !invalid.ValidationErrors.ContainsKey("segment")
+        || !invalid.ValidationErrors.ContainsKey("plan")
+        || !invalid.ValidationErrors.ContainsKey("message"))
+        throw new Exception("A04 contact request validation did not report all missing/invalid fields.");
+
+    var contactReqId = Guid.NewGuid().ToString("D");
+    var validCmd = new VigiaPlatform.API.ContactRequests.Application.CreateContactRequestCommand(
+        contactReqId, "Carlos Mendoza", "Constructora Andina SAC", "cmendoza@andina.pe",
+        "+51 987 654 321", "CONSTRUCTION", "PRO",
+        "Solicitamos demostración para controlar despachos y recepciones en tres obras.", "es");
+    var created = await contactSvc.CreateAsync(validCmd);
+    if (created.Request is null || created.Request.Id <= 0 || created.Request.Status != "RECEIVED")
+        throw new Exception("A04 valid contact request was not persisted.");
+
+    var replayed = await contactSvc.CreateAsync(validCmd);
+    if (replayed.Request is null || replayed.Request.Id != created.Request.Id)
+        throw new Exception("A04 idempotent contact request replay created a duplicate.");
+
+    var conflict = await contactSvc.CreateAsync(validCmd with { CompanyName = "Otra Empresa SAC" });
+    if (conflict.ConflictCode != "REQUEST_ID_CONFLICT")
+        throw new Exception("A04 reused requestId with different payload did not return REQUEST_ID_CONFLICT.");
+
+    var listed = await contactSvc.ListAsync();
+    if (listed.Count != 1 || listed[0].Email != "cmendoza@andina.pe")
+        throw new Exception("A04 persisted contact request was not returned by ListAsync.");
+}
+Console.WriteLine("PASS: A04 contact requests validation, persistence, idempotency and conflict checks verified.");
+
+sealed class InMemoryContactRequestRepository : VigiaPlatform.API.ContactRequests.Domain.Repositories.IContactRequestRepository
+{
+    private readonly List<VigiaPlatform.API.ContactRequests.Domain.Model.Aggregates.ContactRequest> _items = [];
+    public Task AddAsync(VigiaPlatform.API.ContactRequests.Domain.Model.Aggregates.ContactRequest request, CancellationToken ct = default)
+    {
+        typeof(VigiaPlatform.API.ContactRequests.Domain.Model.Aggregates.ContactRequest)
+            .GetProperty("Id")!.SetValue(request, (long)(_items.Count + 1));
+        _items.Add(request);
+        return Task.CompletedTask;
+    }
+    public Task<VigiaPlatform.API.ContactRequests.Domain.Model.Aggregates.ContactRequest?> FindByIdAsync(long id, CancellationToken ct = default) =>
+        Task.FromResult(_items.FirstOrDefault(x => x.Id == id));
+    public Task<VigiaPlatform.API.ContactRequests.Domain.Model.Aggregates.ContactRequest?> FindByRequestIdAsync(string requestId, CancellationToken ct = default) =>
+        Task.FromResult(_items.FirstOrDefault(x => x.RequestId == requestId));
+    public Task<IReadOnlyList<VigiaPlatform.API.ContactRequests.Domain.Model.Aggregates.ContactRequest>> ListAsync(CancellationToken ct = default) =>
+        Task.FromResult<IReadOnlyList<VigiaPlatform.API.ContactRequests.Domain.Model.Aggregates.ContactRequest>>(_items.ToList());
+}
+
+sealed class NoOpUnitOfWork : VigiaPlatform.API.Shared.Domain.Repositories.IUnitOfWork
+{
+    public Task CompleteAsync() => Task.CompletedTask;
+    public Task CompleteAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+}
 
