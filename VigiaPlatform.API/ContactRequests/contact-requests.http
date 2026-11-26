@@ -1,0 +1,26 @@
+@baseUrl = http://localhost:5184
+
+### 1. Submit a valid subscription contact request (public, returns 201 Created)
+POST {{baseUrl}}/api/v1/contact-requests
+Content-Type: application/json
+
+{
+  "requestId": "9f3d2a1b-4c5e-4f6a-8b7c-1d2e3f4a5b6c",
+  "fullName": "Carlos Mendoza",
+  "companyName": "Constructora Andina SAC",
+  "email": "cmendoza@andina.pe",
+  "phone": "+51 987 654 321",
+  "segment": "CONSTRUCTION",
+  "plan": "PRO",
+  "message": "Necesitamos controlar despachos y recepciones en tres obras en Lima.",
+  "locale": "es"
+}
+
+### 2. Missing required fields (returns 400 Bad Request listing missing fields)
+POST {{baseUrl}}/api/v1/contact-requests
+Content-Type: application/json
+
+{
+  "fullName": "Carlos Mendoza",
+  "email": "correo-invalido"
+}

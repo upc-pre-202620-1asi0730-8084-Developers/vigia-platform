@@ -76,6 +76,90 @@ namespace VigiaPlatform.API.Shared.Infrastructure.Persistence.EntityFrameworkCor
                     b.ToTable("activity_records", (string)null);
                 });
 
+            modelBuilder.Entity("VigiaPlatform.API.ContactRequests.Domain.Model.Aggregates.ContactRequest", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    b.Property<string>("CompanyName")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("varchar(160)")
+                        .HasColumnName("company_name");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(180)
+                        .HasColumnType("varchar(180)")
+                        .HasColumnName("email");
+
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("varchar(120)")
+                        .HasColumnName("full_name");
+
+                    b.Property<string>("Locale")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("varchar(10)")
+                        .HasColumnName("locale");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(1500)
+                        .HasColumnType("varchar(1500)")
+                        .HasColumnName("message");
+
+                    b.Property<string>("Phone")
+                        .HasMaxLength(40)
+                        .HasColumnType("varchar(40)")
+                        .HasColumnName("phone");
+
+                    b.Property<string>("Plan")
+                        .HasMaxLength(40)
+                        .HasColumnType("varchar(40)")
+                        .HasColumnName("plan");
+
+                    b.Property<string>("RequestId")
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("request_id");
+
+                    b.Property<string>("Segment")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("varchar(32)")
+                        .HasColumnName("segment");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("status");
+
+                    b.HasKey("Id")
+                        .HasName("pk_contact_requests");
+
+                    b.HasIndex("CreatedAtUtc")
+                        .HasDatabaseName("ix_contact_requests_created_at_utc");
+
+                    b.HasIndex("Email")
+                        .HasDatabaseName("ix_contact_requests_email");
+
+                    b.HasIndex("RequestId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_contact_requests_request_id");
+
+                    b.ToTable("contact_requests", (string)null);
+                });
+
             modelBuilder.Entity("VigiaPlatform.API.DiscrepancyAndEvidenceManagement.Domain.Model.Aggregates.DiscrepancyCase", b =>
                 {
                     b.Property<int>("Id")
